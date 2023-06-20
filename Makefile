@@ -1,6 +1,7 @@
 PREFIX=${HOME}/.local
 
 all:
+	@echo "make test"
 	@echo "make install"
 	@echo "make lninstall"
 	@echo "make uninstall"
@@ -30,3 +31,7 @@ uninstall:
 	rm -f "${PREFIX}/share/zsh/site-functions/_tsp"
 	rm -f "${PREFIX}/bin/tsp"
 .PHONY: uninstall
+
+test:
+	zsh "$$(which shellspec)"
+.PHONY: test

@@ -36,11 +36,11 @@ _tsp_file() {
   case "$state" in
       cmds)
           _values "tsp_file command" \
-                  "add[Add a tag to one or more files.]" \
+                  "add[Add one or more tags to one or more files.]" \
                   "clean[Remove the whole tag group from one or more files.]" \
                   "has[Test whether a file has a given tag.]" \
                   "list[List the tags for a given file.]" \
-                  "remove[Remove a tag from one or more files.]" \
+                  "remove[Remove one or more tags from one or more files.]" \
         ;;
       args)
         case $line[1] in

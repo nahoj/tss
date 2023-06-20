@@ -67,7 +67,7 @@ function tsp() {
 
 
   function tsp_file_set() {
-    local tags=("$1")
+    local tags=(${(z)1})
     local file_path="$2"
     require_file_exists "$file_path"
 
@@ -105,33 +105,40 @@ function tsp() {
     fi
   }
 
-  # Add a tag to each of the given files if not already present
+  # Add one or more tags to one or more files if not already present
   function tsp_file_add() {
-    local tag="$1"
+    local tags=(${(z)1})
     shift
 
     for file_path in "$@"; do
       require_file_exists "$file_path"
 
       local file_tags=($(tsp_file_list "$file_path"))
-      # if tag is NOT in file_tags, add it
-      if ! ((file_tags[(Ie)$tag])); then
-        file_tags+=($tag)
+      local new_tags=($file_tags)
+      for tag in "${tags[@]}"; do
+        if ! ((new_tags[(Ie)$tag])); then
+          new_tags+=($tag)
+        fi
+      done
+      if [[ $new_tags != $file_tags ]]; then # TODO check S/O
+        tsp_file_set "$new_tags" "$file_path"
       fi
-      tsp_file_set "$file_tags" "$file_path"
     done
   }
 
   # Remove tag from each of the given files if present
   function tsp_file_remove() {
-    local tag="$1"
+    local tags=(${(z)1})
     shift
 
     for file_path in "$@"; do
       require_file_exists "$file_path"
 
       local file_tags=($(tsp_file_list "$file_path"))
-      new_tags=("${(@)file_tags:#$tag}")
+      local new_tags=($file_tags)
+      for tag in "${tags[@]}"; do
+        new_tags=("${(@)new_tags:#$tag}")
+      done
       if [[ $new_tags != $file_tags ]]; then # TODO check S/O
         tsp_file_set "$new_tags" "$file_path"
       fi
