@@ -1,3 +1,2 @@
 #!/bin/zsh
-autoload -U tsp
-tsp "$@"
+autoload -U tsp && tsp "$@"
