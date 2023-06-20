@@ -1,0 +1,3 @@
+#!/bin/zsh
+autoload -U tsp
+tsp "$@"
