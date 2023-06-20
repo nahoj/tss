@@ -3,65 +3,65 @@
 # Description: Zsh completion script for the 'tsp' command
 
 _tsp() {
-    local line state
+  local line state
 
-    _arguments -C \
-               "1: :->cmds" \
-               "*::arg:->args"
-    case "$state" in
-        cmds)
-            _values "tsp command" \
-                    "file[TODO descr]" \
-                    "test[blah]" \
-            ;;
-        args)
-            case $line[1] in
-                file)
-                    _tsp_file
-                    ;;
-                test)
-                    _tsp_test
-                    ;;
-            esac
-            ;;
-    esac
+  _arguments -C \
+             "1: :->cmds" \
+             "*::arg:->args"
+  case "$state" in
+      cmds)
+        _values "tsp command" \
+                "file[TODO descr]" \
+                "test[blah]" \
+        ;;
+      args)
+        case $line[1] in
+          file)
+              _tsp_file
+              ;;
+          test)
+              _tsp_test
+              ;;
+        esac
+        ;;
+  esac
 }
 
 _tsp_file() {
-    local line state
+  local line state
 
-    _arguments -C \
-               "1: :->cmds" \
-               "*::arg:->args"
-    case "$state" in
-        cmds)
-            _values "tsp_file command" \
-                    "add[Add a tag to one or more files.]" \
-                    "clean[Remove the whole tag group from one or more files.]" \
-                    "has[Test whether a file has a given tag.]" \
-                    "list[List the tags for a given file.]" \
-                    "remove[Remove a tag from one or more files.]" \
-            ;;
-        args)
-            case $line[1] in
-                add)
-                    _tsp_file_add
-                    ;;
-                clean)
-                    _tsp_file_clean
-                    ;;
-                has)
-                    _tsp_file_has
-                    ;;
-                list)
-                    _tsp_file_list
-                    ;;
-                remove)
-                    _tsp_file_remove
-                    ;;
-            esac
-            ;;
-    esac
+  _arguments -C \
+             "1: :->cmds" \
+             "*::arg:->args"
+  case "$state" in
+      cmds)
+          _values "tsp_file command" \
+                  "add[Add a tag to one or more files.]" \
+                  "clean[Remove the whole tag group from one or more files.]" \
+                  "has[Test whether a file has a given tag.]" \
+                  "list[List the tags for a given file.]" \
+                  "remove[Remove a tag from one or more files.]" \
+        ;;
+      args)
+        case $line[1] in
+          add)
+              _tsp_file_add
+              ;;
+          clean)
+              _tsp_file_clean
+              ;;
+          has)
+              _tsp_file_has
+              ;;
+          list)
+              _tsp_file_list
+              ;;
+          remove)
+              _tsp_file_remove
+              ;;
+        esac
+        ;;
+  esac
 }
 
 # tsp file add takes positional arguments: first a tag, then one or more files
