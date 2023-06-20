@@ -1,17 +1,17 @@
 # A ZSH library for TagSpaces
 
-# This file contains a set of zsh function to read and edit TagSpaces tags.
+# This file contains a set of zsh functions to read and edit TagSpaces tags.
 
 # From the TagSpaces documentation:
 # "TagSpaces supports tagging of files in a cross platform way. It uses basically the name of the file to save this
 # kind of meta information. As an example if you want to add the tags vacation and alps to a image named IMG-2653.jpg,
 # the application will simply rename it to IMG-2653[vacation alps].jpg."
 
-function tsp() {
+tsp() {
 
   set -euo pipefail
 
-  function require_file_exists() {
+  require_file_exists() {
     local file_path="$1"
     if [[ ! -f "$file_path" ]]; then
       echo "File not found: $file_path"
@@ -19,7 +19,7 @@ function tsp() {
     fi
   }
 
-  function require_file_does_not_exist() {
+  require_file_does_not_exist() {
     local file_path="$1"
     if [[ -f "$file_path" ]]; then
       echo "File already exists: $file_path"
@@ -35,14 +35,14 @@ function tsp() {
   local file_name_maybe_tag_group_regex='^([^[]*)(\[([^]]*)\])?(.*)$'
 
   # Prints the tags for the given file, or an empty string if the file has no tags
-  function tsp_file_list() {
+  tsp_file_list() {
     local file_path="$1"
     require_file_exists "$file_path"
     local tags=($(basename "$file_path" | sed -En "s/$file_name_maybe_tag_group_regex/\3/p"))
     echo "${tags[@]}"
   }
 
-  function tsp_file_has() {
+  tsp_file_has() {
     local tag="$1"
     local file_path="$2"
     require_file_exists "$file_path"
@@ -51,7 +51,7 @@ function tsp() {
   }
 
   # remove tag group from the given files
-  function tsp_file_clean() {
+  tsp_file_clean() {
     local file_path
     for file_path in "$@"; do
       require_file_exists "$file_path"
@@ -66,7 +66,7 @@ function tsp() {
   }
 
 
-  function tsp_file_set() {
+  tsp_file_set() {
     local tags=(${(z)1})
     local file_path="$2"
     require_file_exists "$file_path"
@@ -106,7 +106,7 @@ function tsp() {
   }
 
   # Add one or more tags to one or more files if not already present
-  function tsp_file_add() {
+  tsp_file_add() {
     local tags=(${(z)1})
     shift
 
@@ -127,7 +127,7 @@ function tsp() {
   }
 
   # Remove tag from each of the given files if present
-  function tsp_file_remove() {
+  tsp_file_remove() {
     local tags=(${(z)1})
     shift
 
@@ -145,7 +145,7 @@ function tsp() {
     done
   }
 
-  function tsp_file() {
+  tsp_file() {
     local subcommand="$1"
     shift
     case "$subcommand" in
