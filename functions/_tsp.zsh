@@ -37,6 +37,11 @@ _tsp_file_list() {
              '1:file:_files'
 }
 
+_tsp_file_location() {
+  _arguments -s \
+             '1:file:_files'
+}
+
 _tsp_file_remove() {
   _arguments -s \
              '1: :->tag' \
@@ -56,6 +61,7 @@ _tsp_file() {
               "clean[Remove the whole tag group from one or more files.]" \
               "has[Test whether a file has a given tag.]" \
               "list[List the tags for a given file.]" \
+              "location[Prints the TagSpaces location of the given file, or an empty string]" \
               "remove[Remove one or more tags from one or more files.]" \
       ;;
     args)
@@ -71,6 +77,9 @@ _tsp_file() {
         ;;
       list)
         _tsp_file_list
+        ;;
+      location)
+        _tsp_file_location
         ;;
       remove)
         _tsp_file_remove

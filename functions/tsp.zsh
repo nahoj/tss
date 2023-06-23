@@ -9,7 +9,7 @@
 
 tsp() {
 
-  set -euo pipefail
+  set -uo localoptions -o pipefail
 
   # From https://stackoverflow.com/a/76516890
   # Takes the names of two array variables
@@ -62,6 +62,29 @@ tsp() {
     local tags=($(basename "$file_path" | sed -En "s/$file_name_maybe_tag_group_regex/\3/p"))
     echo "${tags[@]}"
   }
+
+  # Prints the closest ancestor directory of the given file that contains a `.ts/tsi.json` file,
+  # or an empty string if there is none
+  tsp_file_location() {
+    aux() {
+      local file_path="$1"
+      if [[ "$file_path" == "/" ]]; then
+        echo ""
+      else
+        local dir_path="$(dirname "$file_path")"
+        if [[ -f "$dir_path/.ts/tsi.json" ]]; then
+          echo "$dir_path"
+        else
+          aux "$dir_path"
+        fi
+      fi
+    }
+
+    local file_path="$1"
+    require_file_exists "$file_path"
+    aux "$(realpath -s "$file_path")"
+  }
+
 
   tsp_file_has() {
     local tag="$1"
@@ -181,6 +204,9 @@ tsp() {
         ;;
       list)
         tsp_file_list "$@"
+        ;;
+      location)
+        tsp_file_location "$@"
         ;;
       remove)
         tsp_file_remove "$@"
