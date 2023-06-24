@@ -1,14 +1,19 @@
 Describe 'tsp'
-  Include src/util.zsh
-  Include src/file.zsh
-  Include src/tag.zsh
-  Include src/main.zsh
+  alias tsp='src/tsp'
   BeforeEach 'rm -rf _test && mkdir _test'
   AfterEach 'rm -rf _test'
 
   Describe 'file'
 
     Describe 'clean'
+      It 'rejects a directory'
+        mkdir _test/dir
+        When call tsp file clean _test/dir
+        The status should equal 1
+        The output should not equal ""
+        The path "_test/dir" should be directory
+      End
+
       It 'removes a tag group from a file with tags'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
@@ -45,6 +50,30 @@ Describe 'tsp'
     End
 
     Describe 'has'
+      It 'rejects a nonexistent file'
+        When call tsp file has _test/file tag
+        The status should equal 1
+        The output should not equal ""
+      End
+
+      It 'rejects a directory'
+        local dir="_test/dir"
+        mkdir "$dir"
+        When call tsp file has _test/dir tag
+        The status should equal 1
+        The output should not equal ""
+        The path "$dir" should be directory
+      End
+
+      It 'rejects an invalid tag'
+        local file="_test/file.ext"
+        touch "$file"
+        When call tsp file has "$file" '['
+        The status should equal 1
+        The output should equal "Invalid tag: '['"
+        The file "$file" should be exist
+      End
+
       It 'returns 0 if a file has the given tag'
         local file="_test/file[t u v].ext"
         touch "$file"
@@ -61,6 +90,21 @@ Describe 'tsp'
     End
 
     Describe 'list'
+      It 'rejects a nonexistent file'
+        When call tsp file list _test/file
+        The status should equal 1
+        The output should not equal ""
+      End
+
+      It 'rejects a directory'
+        local dir="_test/dir"
+        mkdir "$dir"
+        When call tsp file list "$dir"
+        The status should equal 1
+        The output should not equal ""
+        The path "$dir" should be directory
+      End
+
       It 'lists tags for a file with tags'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
@@ -87,6 +131,25 @@ Describe 'tsp'
   Describe 'tag'
 
     Describe 'add'
+
+      It 'rejects an invalid tag'
+        local file="_test/file.ext"
+        touch "$file"
+        When call tsp tag add '[' "$file"
+        The status should equal 1
+        The output should not equal ""
+        The file "$file" should be exist
+      End
+
+      It 'rejects a directory'
+        local dir="_test/dir"
+        mkdir "$dir"
+        When call tsp tag add tag "$dir"
+        The status should equal 1
+        The output should not equal ""
+        The path "$dir" should be directory
+      End
+
       It 'adds a tag to a file with a tag group'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
@@ -148,6 +211,25 @@ Describe 'tsp'
     End
 
     Describe 'remove'
+
+      It 'rejects an invalid tag'
+        local file="_test/file.ext"
+        touch "$file"
+        When call tsp tag remove ']' "$file"
+        The status should equal 1
+        The output should not equal ""
+        The file "$file" should be exist
+      End
+
+      It 'rejects a directory'
+        local dir="_test/dir"
+        mkdir "$dir"
+        When call tsp tag remove tag "$dir"
+        The status should equal 1
+        The output should not equal ""
+        The path "$dir" should be directory
+      End
+
       It 'removes a tag from a file with a tag group'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
@@ -185,7 +267,6 @@ Describe 'tsp'
         local file="_test/file[tag1 tag2 tag3 tag4].ext"
         touch "$file"
         When call tsp tag remove 'tag1 tag3' "$file"
-        ls _test
         The file "$file" should not be exist
         The file "_test/file[tag2 tag4].ext" should be exist
       End

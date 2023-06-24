@@ -14,37 +14,9 @@ arrayeq() {
   fi
 
   # Remember zsh arrays are 1-indexed
-  local i
   for (( i = 1; i <= $len; i++)); do
     if [[ ${(P)1[i]} != ${(P)2[i]} ]]; then
         return 1
     fi
   done
 }
-
-require_file_exists() {
-  local file_path
-  file_path=$1
-
-  if [[ ! -f "$file_path" ]]; then
-    echo "File not found: $file_path"
-    return 1
-  fi
-}
-
-require_file_does_not_exist() {
-  local file_path
-  file_path=$1
-
-  if [[ -f "$file_path" ]]; then
-    echo "File already exists: $file_path"
-    return 1
-  fi
-}
-
-# Regex groups are:
-# - before tag group
-# - tag group (brackets included)
-# - tag group (brackets excluded)
-# - after tag group
-local file_name_maybe_tag_group_regex='^([^[]*)(\[([^]]*)\])?(.*)$'

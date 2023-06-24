@@ -1,8 +1,41 @@
+
+require_file_exists_not_dir() {
+  local file_path
+  file_path=$1
+
+  if [[ ! -f "$file_path" ]]; then
+    echo "File not found: $file_path"
+    return 1
+  else
+    if [[ -d "$file_path" ]]; then
+      echo "File is a directory: $file_path"
+      return 1
+    fi
+  fi
+}
+
+require_file_does_not_exist() {
+  local file_path
+  file_path=$1
+
+  if [[ -f "$file_path" ]]; then
+    echo "File already exists: $file_path"
+    return 1
+  fi
+}
+
+# Regex groups are:
+# - before tag group
+# - tag group (brackets included)
+# - tag group (brackets excluded)
+# - after tag group
+local file_name_maybe_tag_group_regex='^([^[]*)(\[([^]]*)\])?(.*)$'
+
 # Prints the tags for the given file, or an empty string if the file has no tags
 tsp_file_list() {
   local file_path
   file_path=$1
-  require_file_exists "$file_path"
+  require_file_exists_not_dir "$file_path"
 
   local tags
   tags=($(basename "$file_path" | sed -En "s/$file_name_maybe_tag_group_regex/\3/p"))
@@ -30,7 +63,7 @@ tsp_file_location() {
 
   local file_path
   file_path=$1
-  require_file_exists "$file_path"
+  require_file_exists_not_dir "$file_path"
   aux "$(realpath -s "$file_path")"
 }
 
@@ -38,7 +71,8 @@ tsp_file_has() {
   local file_path tag
   file_path=$1
   tag=$2
-  require_file_exists "$file_path"
+  require_file_exists_not_dir "$file_path"
+  require_tag_valid "$tag"
 
   local file_tags
   file_tags=($(tsp_file_list "$file_path"))
@@ -49,7 +83,7 @@ tsp_file_has() {
 tsp_file_clean() {
   local file_path
   for file_path in "$@"; do
-    require_file_exists "$file_path"
+    require_file_exists_not_dir "$file_path"
 
     local file_name new_file_name
     file_name=$(basename "$file_path")
@@ -67,7 +101,7 @@ tsp_file_set() {
   local file_path tags
   file_path=$1
   tags=(${(z)2})
-  require_file_exists "$file_path"
+  require_file_exists_not_dir "$file_path"
 
   # if tags empty, clean file
   if [[ ${#tags[@]} -eq 0 ]]; then
