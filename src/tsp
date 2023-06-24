@@ -1,0 +1,16 @@
+#!/usr/bin/env zsh
+
+# From the TagSpaces documentation:
+# "TagSpaces supports tagging of files in a cross platform way. It uses basically the name of the file to save this
+# kind of meta information. As an example if you want to add the tags vacation and alps to a image named IMG-2653.jpg,
+# the application will simply rename it to IMG-2653[vacation alps].jpg."
+
+#set -o WARN_CREATE_GLOBAL -o WARN_NESTED_VAR
+
+dir=${0:A:h}
+. "$dir/util.zsh"
+. "$dir/file.zsh"
+. "$dir/tag.zsh"
+. "$dir/main.zsh"
+
+tsp "$@"

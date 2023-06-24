@@ -1,7 +1,10 @@
 PREFIX=$(HOME)/.local
 
 BIN_DIR=$(PREFIX)/bin
-FUNCTIONS_DIR=$(PREFIX)/share/zsh/site-functions
+INSTALL_DIR=$(PREFIX)/share/tagspaces-cli
+ZSH_FUNCTIONS_DIR=$(PREFIX)/share/zsh/site-functions
+
+MODULES=file main tag util
 
 all:
 	@echo "make test"
@@ -11,28 +14,31 @@ all:
 .PHONY: all
 
 install:
-	mkdir -p "$(FUNCTIONS_DIR)"
-	install -Dm644 functions/tsp.zsh "$(FUNCTIONS_DIR)/tsp"
-	install -Dm644 functions/_tsp.zsh "$(FUNCTIONS_DIR)/_tsp"
+	mkdir -p "$(INSTALL_DIR)"
+	install -Dm644 $(MODULES:%=src/%.zsh) "$(INSTALL_DIR)"
+	install -Dm755 src/tsp "$(INSTALL_DIR)"
 	mkdir -p "$(BIN_DIR)"
-	install -Dm755 bin/tsp "$(BIN_DIR)/tsp"
-	zsh postinstall.zsh "$(FUNCTIONS_DIR)"
+	ln -sf "$(abspath $(INSTALL_DIR))/tsp" "$(BIN_DIR)"
+	mkdir -p "$(ZSH_FUNCTIONS_DIR)"
+	install -Dm644 src/_tsp.zsh "$(ZSH_FUNCTIONS_DIR)/_tsp"
+	zsh postinstall.zsh "$(ZSH_FUNCTIONS_DIR)"
 .PHONY: install
 
 lninstall:
-	mkdir -p "$(FUNCTIONS_DIR)"
-	ln -sf "$(PWD)/functions/tsp.zsh" "$(FUNCTIONS_DIR)/tsp"
-	ln -sf "$(PWD)/functions/_tsp.zsh" "$(FUNCTIONS_DIR)/_tsp"
+	mkdir -p "$(INSTALL_DIR)"
+	ln -sf $(MODULES:%="$(PWD)/src/%.zsh") "$(INSTALL_DIR)"
+	ln -sf "$(PWD)/src/tsp" "$(INSTALL_DIR)"
 	mkdir -p "$(BIN_DIR)"
-	ln -sf "$(PWD)/bin/tsp" "$(BIN_DIR)/tsp"
-	zsh postinstall.zsh "$(FUNCTIONS_DIR)"
-.PHONY: install
+	ln -sf "$(abspath $(INSTALL_DIR))/tsp" "$(BIN_DIR)"
+	mkdir -p "$(ZSH_FUNCTIONS_DIR)"
+	ln -sf "$(PWD)/src/_tsp.zsh" "$(ZSH_FUNCTIONS_DIR)/_tsp"
+	zsh postinstall.zsh "$(ZSH_FUNCTIONS_DIR)"
+.PHONY: lninstall
 
 uninstall:
-	rm -f "$(FUNCTIONS_DIR)/tsp"
-	rm -f "$(FUNCTIONS_DIR)/_tsp"
 	rm -f "$(BIN_DIR)/tsp"
-	@echo "You may want to remove 'autoload -U tsp' from your .zshrc."
+	rm -rf "$(INSTALL_DIR)"
+	rm -f "$(ZSH_FUNCTIONS_DIR)/_tsp"
 .PHONY: uninstall
 
 test:

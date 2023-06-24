@@ -1,8 +1,9 @@
-#!/usr/bin/zsh
+#!/usr/bin/env zsh
 
 set -euo pipefail
 
-local functions_dir="$1"
+local functions_dir
+functions_dir=$1
 
 if ! ((fpath[(Ie)$functions_dir])); then
 	cat <<EOF
@@ -16,8 +17,9 @@ if ! ((fpath[(Ie)$functions_dir])); then
 EOF
 fi
 
-local zshrc="${ZDOTDIR:-$HOME}/.zshrc"
-if ! grep -q 'autoload -U tsp' "$zshrc"; then
-  echo "Adding 'autoload -U tsp' to $zshrc."
-  echo 'autoload -U tsp' >>"$zshrc"
-fi
+#local zshrc
+#zshrc=${ZDOTDIR:-$HOME}/.zshrc
+#if ! grep -q 'autoload -U tsp' "$zshrc"; then
+#  echo "Adding 'autoload -U tsp' to $zshrc."
+#  echo 'autoload -U tsp' >>"$zshrc"
+#fi
