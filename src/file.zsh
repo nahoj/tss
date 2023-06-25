@@ -1,16 +1,23 @@
 
+require_file_exists() {
+  local file_path
+  file_path=$1
+
+  if [[ ! -e "$file_path" ]]; then
+    echo "File not found: \"$file_path\""
+    return 1
+  fi
+}
+
 require_file_exists_not_dir() {
   local file_path
   file_path=$1
 
-  if [[ ! -f "$file_path" ]]; then
-    echo "File not found: $file_path"
+  require_file_exists "$file_path"
+
+  if [[ -d "$file_path" ]]; then
+    echo "File is a directory: \"$file_path\""
     return 1
-  else
-    if [[ -d "$file_path" ]]; then
-      echo "File is a directory: $file_path"
-      return 1
-    fi
   fi
 }
 
@@ -19,7 +26,7 @@ require_file_does_not_exist() {
   file_path=$1
 
   if [[ -f "$file_path" ]]; then
-    echo "File already exists: $file_path"
+    echo "File already exists: \"$file_path\""
     return 1
   fi
 }
@@ -30,17 +37,6 @@ require_file_does_not_exist() {
 # - tag group (brackets excluded)
 # - after tag group
 local file_name_maybe_tag_group_regex='^([^[]*)(\[([^]]*)\])?(.*)$'
-
-# Prints the tags for the given file, or an empty string if the file has no tags
-tsp_file_list() {
-  local file_path
-  file_path=$1
-  require_file_exists_not_dir "$file_path"
-
-  local tags
-  tags=($(basename "$file_path" | sed -En "s/$file_name_maybe_tag_group_regex/\3/p"))
-  echo "${tags[@]}"
-}
 
 # Prints the closest ancestor directory of the given file that contains a `.ts/tsi.json` file,
 # or an empty string if there is none
@@ -70,12 +66,12 @@ tsp_file_location() {
 tsp_file_has() {
   local file_path tag
   file_path=$1
-  tag=$2
   require_file_exists_not_dir "$file_path"
+  tag=$2
   require_tag_valid "$tag"
 
   local file_tags
-  file_tags=($(tsp_file_list "$file_path"))
+  file_tags=($(tsp_file_tags "$file_path"))
   ((file_tags[(Ie)$tag]))
 }
 
@@ -98,10 +94,12 @@ tsp_file_clean() {
 }
 
 tsp_file_set() {
+  unsetopt warn_create_global warn_nested_var
+
   local file_path tags
   file_path=$1
-  tags=(${(z)2})
   require_file_exists_not_dir "$file_path"
+  tags=(${(z)2})
 
   # if tags empty, clean file
   if [[ ${#tags[@]} -eq 0 ]]; then
@@ -139,6 +137,17 @@ tsp_file_set() {
   fi
 }
 
+# Prints the tags for the given file, or an empty string if the file has no tags
+tsp_file_tags() {
+  local file_path
+  file_path=$1
+  require_file_exists_not_dir "$file_path"
+
+  local tags
+  tags=($(basename "$file_path" | sed -En "s/$file_name_maybe_tag_group_regex/\3/p"))
+  echo "${tags[@]}"
+}
+
 tsp_file() {
   local subcommand
   subcommand=$1
@@ -153,8 +162,8 @@ tsp_file() {
     has)
       tsp_file_has "$@"
       ;;
-    list)
-      tsp_file_list "$@"
+    tags)
+      tsp_file_tags "$@"
       ;;
     location)
       tsp_file_location "$@"

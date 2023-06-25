@@ -89,9 +89,9 @@ Describe 'tsp'
       End
     End
 
-    Describe 'list'
+    Describe 'tags'
       It 'rejects a nonexistent file'
-        When call tsp file list _test/file
+        When call tsp file tags _test/file
         The status should equal 1
         The output should not equal ""
       End
@@ -99,7 +99,7 @@ Describe 'tsp'
       It 'rejects a directory'
         local dir="_test/dir"
         mkdir "$dir"
-        When call tsp file list "$dir"
+        When call tsp file tags "$dir"
         The status should equal 1
         The output should not equal ""
         The path "$dir" should be directory
@@ -108,21 +108,21 @@ Describe 'tsp'
       It 'lists tags for a file with tags'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
-        When call tsp file list "$file"
+        When call tsp file tags "$file"
         The output should equal 'tag1 tag2'
       End
 
       It 'lists tags for a file with an empty tag group'
         local file="_test/file[].ext"
         touch "$file"
-        When call tsp file list "$file"
+        When call tsp file tags "$file"
         The output should equal ''
       End
 
       It 'lists tags for a file with no tag group'
         local file="_test/file.ext"
         touch "$file"
-        When call tsp file list "$file"
+        When call tsp file tags "$file"
         The output should equal ''
       End
     End
@@ -207,6 +207,34 @@ Describe 'tsp'
         When call tsp tag add 'tag1 tag3' "$file"
         The file "$file" should not be exist
         The file "_test/file[tag1 tag2 tag3].ext" should be exist
+      End
+    End
+
+    Describe 'files'
+      It 'rejects an invalid tag'
+        When call tsp tag files ' '
+        The status should equal 1
+        The output should equal "Invalid tag: ' '"
+      End
+
+      It 'lists files with the given tag'
+        local file1="_test/file1[tag1 tag2].ext"
+        local file2="_test/file2[tag1].ext"
+        local file3="_test/file3[tag2].ext"
+        touch "$file1" "$file2" "$file3"
+        When call tsp tag files tag1 "_test"
+        The status should equal 0
+        The output should equal "$file1
+$file2"
+      End
+
+      It 'lists a file from a subdirectory'
+        local subdir="_test/subdir"
+        mkdir "$subdir"
+        touch "$subdir/file1[tag1].ext"
+        When call tsp tag files tag1 "_test"
+        The status should equal 0
+        The output should equal "$subdir/file1[tag1].ext"
       End
     End
 

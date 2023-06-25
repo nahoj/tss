@@ -1,4 +1,4 @@
-set -euo PIPE_FAIL -o TYPESET_SILENT
+setopt err_return local_loops local_options no_unset pipe_fail typeset_silent warn_create_global warn_nested_var
 
 # From https://stackoverflow.com/a/76516890
 # Takes the names of two array variables
@@ -19,4 +19,11 @@ arrayeq() {
         return 1
     fi
   done
+}
+
+# Evaluate the given arguments as a command and print the exit status
+status() {
+  unsetopt err_return err_exit
+  eval "${(q)@[@]}" >/dev/null
+  echo $?
 }
