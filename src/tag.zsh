@@ -5,7 +5,7 @@ require_tag_valid() {
 
   # if $tag contains [ or ] or whitespace
   if [[ "$tag" =~ '[][[:space:]]' ]]; then
-    echo "Invalid tag: '$tag'"
+    echo "Invalid tag: '$tag'" >&2
     return 1
   fi
 }
@@ -38,13 +38,8 @@ tsp_tag_add() {
   done
 }
 
-tsp_tag_files_aux() {
-  local -i with_0_without_1
-  local tag paths
-  with_0_without_1=$1
-  tag=$2
-  require_tag_valid "$tag"
-  shift 2
+list_files_in_paths() {
+  local paths
   paths=("$@")
   if [[ ${#paths[@]} -eq 0 ]]; then
     paths=(*)
@@ -55,17 +50,26 @@ tsp_tag_files_aux() {
     require_file_exists "$pathh"
 
     if [[ -d "$pathh" ]]; then
-      local file_path
-      for file_path in "$pathh"/**/*(^/); do
-        if ! (( $(status tsp_file_has "$file_path" "$tag") ^^ with_0_without_1 )); then
-          echo "$file_path"
-        fi
-      done
-
+      print -l "$pathh"/**/*(^/)
     else
-      if ! (( $(status tsp_file_has "$pathh" "$tag") ^^ with_0_without_1 )); then
-        echo "$pathh"
-      fi
+      echo "$pathh"
+    fi
+  done
+}
+
+tsp_tag_files_aux() {
+  local -i with_0_without_1
+  local tag paths
+  with_0_without_1=$1
+  tag=$2
+  require_tag_valid "$tag"
+  shift 2
+  paths=("$@")
+
+  local file_path
+  list_files_in_paths "${paths[@]}" | while IFS= read -r file_path; do
+    if ! (( $(status tsp_file_has "$file_path" "$tag") ^^ with_0_without_1 )); then
+      echo "$file_path"
     fi
   done
 }
@@ -124,7 +128,7 @@ tsp_tag() {
       tsp_tag_remove "$@"
       ;;
     *)
-      echo "Unknown subcommand: $subcommand"
+      echo "Unknown subcommand: $subcommand" >&2
       return 1
       ;;
   esac

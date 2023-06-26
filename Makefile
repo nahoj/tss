@@ -4,7 +4,7 @@ BIN_DIR=$(PREFIX)/bin
 INSTALL_DIR=$(PREFIX)/share/tagspaces-cli
 ZSH_FUNCTIONS_DIR=$(PREFIX)/share/zsh/site-functions
 
-MODULES=file main tag util
+MODULES=dir file first main tag
 
 all:
 	@echo "make test"

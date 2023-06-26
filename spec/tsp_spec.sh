@@ -3,6 +3,69 @@ Describe 'tsp'
   BeforeEach 'rm -rf _test && mkdir _test'
   AfterEach 'rm -rf _test'
 
+  Describe 'dir'
+    Describe 'all-tags'
+      It 'rejects a file'
+        local file="_test/file"
+        touch "$file"
+        When call tsp dir all-tags "$file"
+        The status should equal 1
+        The stderr should not equal ""
+      End
+
+      It 'rejects a directory that does not exist'
+        When call tsp dir all-tags _test/dir
+        The status should equal 1
+        The stderr should not equal ""
+      End
+
+      It 'defaults to . if no argument is given'
+        local file1="_test/file1[tag1]"
+        touch "$file1"
+        pushd _test >/dev/null
+        When call tsp dir all-tags
+        popd >/dev/null
+        The status should equal 0
+        The output should equal "tag1"
+      End
+
+      It 'outputs unique, sorted tags'
+        mkdir _test/dir
+        local file1="_test/dir/file1[tag3 tag2]"
+        local file2="_test/dir/file2[tag2 tag1].ext"
+        touch "$file1" "$file2"
+        When call tsp dir all-tags _test/dir
+        The status should equal 0
+        The output should equal "tag1
+tag2
+tag3"
+      End
+
+      It 'outputs nothing if there are no tags'
+        mkdir _test/dir
+        local file1="_test/dir/file1"
+        local file2="_test/dir/file2.ext"
+        touch "$file1" "$file2"
+        When call tsp dir all-tags _test/dir
+        The status should equal 0
+        The output should equal ""
+      End
+
+      It 'outputs the tags of all files in the directory recursively'
+        mkdir -p _test/dir1/dir2
+        local file1="_test/dir1/dir2/file1[tag1 tag2]"
+        local file2="_test/dir1/dir2/file2[tag3].ext"
+        touch "$file1" "$file2"
+        When call tsp dir all-tags _test/dir1
+        The status should equal 0
+        The output should equal "tag1
+tag2
+tag3"
+      End
+
+    End
+  End
+
   Describe 'file'
 
     Describe 'clean'
@@ -10,7 +73,7 @@ Describe 'tsp'
         mkdir _test/dir
         When call tsp file clean _test/dir
         The status should equal 1
-        The output should not equal ""
+        The stderr should not equal ""
         The path "_test/dir" should be directory
       End
 
@@ -18,7 +81,7 @@ Describe 'tsp'
         touch "_test/file[tag1 tag2"
         When call tsp file clean "_test/file[tag1 tag2"
         The status should equal 1
-        The output should not equal ""
+        The stderr should not equal ""
         The file "_test/file[tag1 tag2" should be exist
       End
 
@@ -28,7 +91,7 @@ Describe 'tsp'
         touch "$file1" "$file2"
         When call tsp file clean "$file1" "$file2"
         The status should equal 1
-        The output should not equal ""
+        The stderr should not equal ""
         The file "$file1" should be exist
         The file "$file2" should not be exist
         The file "_test/file2.ext" should be exist
@@ -73,7 +136,7 @@ Describe 'tsp'
       It 'rejects a nonexistent file'
         When call tsp file has _test/file tag
         The status should equal 1
-        The output should not equal ""
+        The stderr should not equal ""
       End
 
       It 'rejects a directory'
@@ -81,7 +144,7 @@ Describe 'tsp'
         mkdir "$dir"
         When call tsp file has _test/dir tag
         The status should equal 1
-        The output should not equal ""
+        The stderr should not equal ""
         The path "$dir" should be directory
       End
 
@@ -90,7 +153,7 @@ Describe 'tsp'
         touch "$file"
         When call tsp file has "$file" '['
         The status should equal 1
-        The output should equal "Invalid tag: '['"
+        The stderr should equal "Invalid tag: '['"
         The file "$file" should be exist
       End
 
@@ -113,7 +176,7 @@ Describe 'tsp'
       It 'rejects a nonexistent file'
         When call tsp file tags _test/file
         The status should equal 1
-        The output should not equal ""
+        The stderr should not equal ""
       End
 
       It 'rejects a directory'
@@ -121,7 +184,7 @@ Describe 'tsp'
         mkdir "$dir"
         When call tsp file tags "$dir"
         The status should equal 1
-        The output should not equal ""
+        The stderr should not equal ""
         The path "$dir" should be directory
       End
 
@@ -157,7 +220,7 @@ Describe 'tsp'
         touch "$file"
         When call tsp tag add '[' "$file"
         The status should equal 1
-        The output should not equal ""
+        The stderr should not equal ""
         The file "$file" should be exist
       End
 
@@ -166,7 +229,7 @@ Describe 'tsp'
         mkdir "$dir"
         When call tsp tag add tag "$dir"
         The status should equal 1
-        The output should not equal ""
+        The stderr should not equal ""
         The path "$dir" should be directory
       End
 
@@ -234,7 +297,7 @@ Describe 'tsp'
       It 'rejects an invalid tag'
         When call tsp tag files ' '
         The status should equal 1
-        The output should equal "Invalid tag: ' '"
+        The stderr should equal "Invalid tag: ' '"
       End
 
       It 'lists files with the given tag'
@@ -265,7 +328,7 @@ $file2"
         touch "$file"
         When call tsp tag remove ']' "$file"
         The status should equal 1
-        The output should not equal ""
+        The stderr should not equal ""
         The file "$file" should be exist
       End
 
@@ -274,7 +337,7 @@ $file2"
         mkdir "$dir"
         When call tsp tag remove tag "$dir"
         The status should equal 1
-        The output should not equal ""
+        The stderr should not equal ""
         The path "$dir" should be directory
       End
 

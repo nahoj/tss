@@ -23,7 +23,7 @@ arrayeq() {
 
 # Evaluate the given arguments as a command and print the exit status
 status() {
-  unsetopt err_return err_exit
+  unsetopt err_exit err_return
   eval "${(q)@[@]}" >/dev/null
   echo $?
 }

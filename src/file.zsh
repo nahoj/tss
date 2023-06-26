@@ -13,7 +13,7 @@ require_file_exists() {
   file_path=$1
 
   if [[ ! -e "$file_path" ]]; then
-    echo "File not found: \"$file_path\""
+    echo "File not found: \"$file_path\"" >&2
     return 1
   fi
 }
@@ -25,7 +25,7 @@ require_file_exists_not_dir() {
   require_file_exists "$file_path"
 
   if [[ -d "$file_path" ]]; then
-    echo "File is a directory: \"$file_path\""
+    echo "File is a directory: \"$file_path\"" >&2
     return 1
   fi
 }
@@ -35,7 +35,7 @@ require_file_does_not_exist() {
   file_path=$1
 
   if [[ -f "$file_path" ]]; then
-    echo "File already exists: \"$file_path\""
+    echo "File already exists: \"$file_path\"" >&2
     return 1
   fi
 }
@@ -61,7 +61,7 @@ tsp_file_location() {
 
   local file_path
   file_path=$1
-  require_file_exists_not_dir "$file_path"
+  require_file_exists "$file_path"
   aux "$(realpath -s "$file_path")"
 }
 
@@ -85,7 +85,7 @@ tsp_file_clean_one_file() {
   require_file_exists_not_dir "$file_path"
   file_name=$(basename "$file_path")
   if ! [[ "$file_name" =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
-    echo "Ignoring file with ill-formed name: $file_path"
+    echo "Ignoring file with ill-formed name: $file_path" >&2
     return 1
   fi
 
@@ -126,7 +126,7 @@ tsp_file_set() {
     file_name=$(basename "$file_path")
 
     if ! [[ "$file_name" =~ $file_name_maybe_tag_group_regex ]]; then
-      echo "Invalid file name: $file_path"
+      echo "Invalid file name: $file_path" >&2
       return 1
     fi
 
@@ -188,7 +188,7 @@ tsp_file() {
 #      tsp_file_remove "$@"
 #      ;;
     *)
-      echo "Unknown subcommand: $subcommand"
+      echo "Unknown subcommand: $subcommand" >&2
       return 1
       ;;
   esac
