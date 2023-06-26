@@ -14,6 +14,26 @@ Describe 'tsp'
         The path "_test/dir" should be directory
       End
 
+      It 'rejects a file with an ill-formed name'
+        touch "_test/file[tag1 tag2"
+        When call tsp file clean "_test/file[tag1 tag2"
+        The status should equal 1
+        The output should not equal ""
+        The file "_test/file[tag1 tag2" should be exist
+      End
+
+      It 'ignores an invalid file, cleans a valid file, and returns 1'
+        local file1="_test/file1[tag1 tag2"
+        local file2="_test/file2[tag3].ext"
+        touch "$file1" "$file2"
+        When call tsp file clean "$file1" "$file2"
+        The status should equal 1
+        The output should not equal ""
+        The file "$file1" should be exist
+        The file "$file2" should not be exist
+        The file "_test/file2.ext" should be exist
+      End
+
       It 'removes a tag group from a file with tags'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
