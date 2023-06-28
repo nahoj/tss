@@ -1,4 +1,6 @@
-setopt err_return local_loops local_options no_unset pipe_fail typeset_silent warn_create_global warn_nested_var
+setopt -m err_return 'local*' no_unset pipe_fail typeset_silent 'warn*'
+
+zmodload -F zsh/stat b:zstat
 
 # From https://stackoverflow.com/a/76516890
 # Takes the names of two array variables

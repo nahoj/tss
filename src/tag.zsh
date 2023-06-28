@@ -3,8 +3,8 @@ require_tag_valid() {
   local tag
   tag=$1
 
-  # if $tag contains [ or ] or whitespace
-  if [[ "$tag" =~ '[][[:space:]]' ]]; then
+  # if $tag contains ] or [ or / or whitespace
+  if [[ "$tag" =~ '[][/[:space:]]' ]]; then
     echo "Invalid tag: '$tag'" >&2
     return 1
   fi

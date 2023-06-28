@@ -8,10 +8,15 @@
 set -e
 
 dir=${0:A:h}
+
 . "$dir/first.zsh"
+
 . "$dir/dir.zsh"
 . "$dir/file.zsh"
+. "$dir/index.zsh"
+. "$dir/location.zsh"
 . "$dir/tag.zsh"
+
 . "$dir/main.zsh"
 
 tsp "$@"

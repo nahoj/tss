@@ -8,6 +8,9 @@ tsp() {
     file)
       tsp_file "$@"
       ;;
+    location)
+      tsp_location "$@"
+      ;;
     tag)
       tsp_tag "$@"
       ;;

@@ -8,12 +8,13 @@ file_name_maybe_tag_group_regex='^([^[]*)(\[([^]]*)\])?(.*)$'
 
 well_formed_file_name_maybe_tag_group_regex='^([^][]*)(\[([^][]*)\])?([^][]*)$'
 
+# deprecated (use require_path_exists)?
 require_file_exists() {
   local file_path
   file_path=$1
 
-  if [[ ! -e "$file_path" ]]; then
-    echo "File not found: \"$file_path\"" >&2
+  if [[ ! -e $file_path ]]; then
+    print -r  "File not found: ${(qqq)file_path}" >&2
     return 1
   fi
 }
@@ -22,10 +23,10 @@ require_file_exists_not_dir() {
   local file_path
   file_path=$1
 
-  require_file_exists "$file_path"
+  require_file_exists $file_path
 
-  if [[ -d "$file_path" ]]; then
-    echo "File is a directory: \"$file_path\"" >&2
+  if [[ -d $file_path ]]; then
+    print -r  "File is a directory: ${(qqq)file_path}" >&2
     return 1
   fi
 }
@@ -34,35 +35,20 @@ require_file_does_not_exist() {
   local file_path
   file_path=$1
 
-  if [[ -f "$file_path" ]]; then
-    echo "File already exists: \"$file_path\"" >&2
+  if [[ -f $file_path ]]; then
+    print -r  "File already exists: ${(qqq)file_path}" >&2
     return 1
   fi
 }
 
-# Prints the closest ancestor directory of the given file that contains a `.ts/tsi.json` file,
-# or an empty string if there is none
-tsp_file_location() {
-  aux() {
-    local file_path
-    file_path=$1
+require_path_exists() {
+  local pathh
+  pathh=$1
 
-    if [[ "$file_path" == "/" ]]; then
-      echo ""
-    else
-      local dir_path="$(dirname "$file_path")"
-      if [[ -f "$dir_path/.ts/tsi.json" ]]; then
-        echo "$dir_path"
-      else
-        aux "$dir_path"
-      fi
-    fi
-  }
-
-  local file_path
-  file_path=$1
-  require_file_exists "$file_path"
-  aux "$(realpath -s "$file_path")"
+  if [[ ! -e $pathh ]]; then
+    print -r "Unknown file or directory: ${(qqq)pathh}" >&2
+    return 1
+  fi
 }
 
 tsp_file_has() {
@@ -182,7 +168,7 @@ tsp_file() {
       tsp_file_tags "$@"
       ;;
     location)
-      tsp_file_location "$@"
+      tsp_location_of "$@"
       ;;
 #    remove)
 #      tsp_file_remove "$@"
