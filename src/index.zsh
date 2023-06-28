@@ -83,7 +83,7 @@ tsp_location_build_index() {
   require_is_location "$location"
 
   if [[ -f "$location/.ts/tsi.json.lock" ]]; then
-    echo "Index is locked" >&2
+    print "Index is locked" >&2
     return 1
   fi
   touch "$location/.ts/tsi.json.lock"

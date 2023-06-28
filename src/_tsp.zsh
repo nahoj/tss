@@ -152,13 +152,13 @@ _tsp_tag_add() {
       local tag
       tag=$line[1]
       local files_newlines
-      if [[ -z "$line[$CURRENT]" ]]; then
-        files_newlines=$(tsp tag files-without "$tag" *)
+      if [[ -z $line[$CURRENT] ]]; then
+        files_newlines=$(tsp tag files-without $tag *)
       else
-        if [[ "$line[$CURRENT]" =~ ' $' ]]; then
-          files_newlines=$(tsp tag files-without "$tag" $line[$CURRENT])
+        if [[ $line[$CURRENT] =~ ' $' ]]; then
+          files_newlines=$(tsp tag files-without $tag $line[$CURRENT])
         else
-          files_newlines=$(tsp tag files-without "$tag" $line[$CURRENT]*)
+          files_newlines=$(tsp tag files-without $tag $line[$CURRENT]*)
         fi
       fi
       local files_array
@@ -177,7 +177,7 @@ _tsp_tag_files() {
     tag)
       local dir tags
       dir=${$(tsp file location .):-.} || return $?
-      tags=($(tsp dir all-tags "$dir")) || return $?
+      tags=($(tsp dir all-tags $dir)) || return $?
       _values "tag" \
               "${tags[@]}" \
       ;;
@@ -193,7 +193,7 @@ _tsp_tag_files_without() {
     tag)
       local dir tags
       dir=${$(tsp file location .):-.} || return $?
-      tags=($(tsp dir all-tags "$dir")) || return $?
+      tags=($(tsp dir all-tags $dir)) || return $?
       _values "tag" \
               "${tags[@]}" \
       ;;
@@ -211,7 +211,7 @@ _tsp_tag_remove() {
     tags)
       local dir tags
       dir=${$(tsp file location .):-.} || return $?
-      tags=($(tsp dir all-tags "$dir")) || return $?
+      tags=($(tsp dir all-tags $dir)) || return $?
       if [[ ${#tags} -ne 0 ]]; then
         _values -s ' ' "tag" \
                 "${tags[@]}"
@@ -222,13 +222,13 @@ _tsp_tag_remove() {
       local tag
       tag=$line[1]
       local files_newlines
-      if [[ -z "$line[$CURRENT]" ]]; then
+      if [[ -z $line[$CURRENT] ]]; then
         files_newlines=$(tsp tag files "$tag" *)
       else
-        if [[ "$line[$CURRENT]" =~ ' $' ]]; then
-          files_newlines=$(tsp tag files "$tag" $line[$CURRENT])
+        if [[ $line[$CURRENT] =~ ' $' ]]; then
+          files_newlines=$(tsp tag files $tag $line[$CURRENT])
         else
-          files_newlines=$(tsp tag files "$tag" $line[$CURRENT]*)
+          files_newlines=$(tsp tag files $tag $line[$CURRENT]*)
         fi
       fi
       local files_array

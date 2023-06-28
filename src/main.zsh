@@ -1,7 +1,7 @@
 tsp() {
-  local subcommand="$1"
+  local subcommand=$1
   shift
-  case "$subcommand" in
+  case $subcommand in
     dir)
       tsp_dir "$@"
       ;;
@@ -15,7 +15,7 @@ tsp() {
       tsp_tag "$@"
       ;;
     *)
-      echo "Unknown subcommand: $subcommand" >&2
+      print -r "Unknown subcommand: $subcommand" >&2
       return 1
       ;;
   esac

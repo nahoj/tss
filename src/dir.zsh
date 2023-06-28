@@ -3,7 +3,7 @@ require_dir_exists() {
   local dir_path
   dir_path=$1
   if [[ ! -d "$dir_path" ]]; then
-    echo "Directory does not exist: $dir_path" >&2
+    print -r "Directory does not exist: $dir_path" >&2
     return 1
   fi
 }
@@ -31,7 +31,7 @@ tsp_dir() {
       tsp_dir_all_tags "$@"
       ;;
     *)
-      echo "Unknown subcommand: $subcommand" >&2
+      print -r "Unknown subcommand: $subcommand" >&2
       return 1
       ;;
   esac

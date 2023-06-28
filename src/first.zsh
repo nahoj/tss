@@ -27,5 +27,5 @@ arrayeq() {
 status() {
   unsetopt err_exit err_return
   eval "${(q)@[@]}" >/dev/null
-  echo $?
+  print $?
 }

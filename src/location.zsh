@@ -3,7 +3,7 @@ require_is_location() {
   local location
   location=$1
   if [[ ! -f "$location/.ts/tsi.json" ]]; then
-    echo "Not a location: $location" >&2
+    print -r "Not a location: ${(qqq)location}" >&2
     return 1
   fi
 }
@@ -20,7 +20,7 @@ tsp_location_all_tags() {
   local location index
   location=$(tsp_location_of_dir_unsafe .)
   if [[ -z $location ]]; then
-    echo "Not in a location" >&2
+    print "Not in a location" >&2
     return 1
   fi
   index="$location/.ts/tsi.json"
@@ -36,12 +36,12 @@ tsp_location_of_dir_unsafe() {
   dir=$1
 
   if [[ -f "$dir/.ts/tsi.json" ]]; then
-    echo "$dir"
+    print -r $dir
   else
-    if [[ "$dir" == "/" ]]; then
-      echo ""
+    if [[ $dir == "/" ]]; then
+      print
     else
-      tsp_location_of_dir_unsafe "$(dirname "$dir")"
+      tsp_location_of_dir_unsafe $(dirname $dir)
     fi
   fi
 }
@@ -49,12 +49,12 @@ tsp_location_of_dir_unsafe() {
 tsp_location_of() {
   local pathh
   pathh=$1
-  require_file_exists "$pathh"
+  require_file_exists $pathh
 
-  if [[ -d "$pathh" ]]; then
-    tsp_location_of_dir_unsafe "$(realpath -s "$pathh")"
+  if [[ -d $pathh ]]; then
+    tsp_location_of_dir_unsafe $(realpath -s $pathh)
   else
-    tsp_location_of_dir_unsafe "$(dirname "$(realpath -s "$pathh")")"
+    tsp_location_of_dir_unsafe $(dirname $(realpath -s $pathh))
   fi
 }
 
@@ -62,7 +62,7 @@ tsp_location() {
   local subcommand
   subcommand=$1
   shift
-  case "$subcommand" in
+  case $subcommand in
     all-tags)
       tsp_location_all_tags "$@"
       ;;
@@ -73,7 +73,7 @@ tsp_location() {
       tsp_location_of "$@"
       ;;
     *)
-      echo "Unknown subcommand: $subcommand" >&2
+      print -r "Unknown subcommand: $subcommand" >&2
       return 1
       ;;
   esac
