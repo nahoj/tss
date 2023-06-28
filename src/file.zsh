@@ -52,15 +52,38 @@ require_path_exists() {
 }
 
 tsp_file_has() {
-  local file_path tag
+  local file_path tag_patterns
   file_path=$1
   require_file_exists_not_dir $file_path
-  tag=$2
-  require_tag_valid $tag
+  tag_patterns=(${(z)2})
+  if [[ ${#tag_patterns} -eq 0 ]]; then
+    print -r "No tag patterns given" >&2
+    return 1
+  fi
 
-  local file_tags
-  file_tags=($(tsp_file_tags $file_path))
-  ((file_tags[(Ie)$tag]))
+  local tags
+  tags=($(tsp_file_tags $file_path))
+
+  if [[ ${#tags} -eq 0 ]]; then
+    return 1
+
+  else
+    local pattern tag
+    local -i found
+    for pattern in "${tag_patterns[@]}"; do
+      found=1
+      for tag in "${tags[@]}"; do
+        if [[ $tag = ${~pattern} ]]; then
+          found=0
+          break
+        fi
+      done
+      if [[ $found -ne 0 ]]; then
+        return 1
+      fi
+    done
+    return 0
+  fi
 }
 
 tsp_file_clean_one_file() {

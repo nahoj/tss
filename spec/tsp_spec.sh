@@ -148,26 +148,38 @@ tag3"
         The path "$dir" should be directory
       End
 
-      It 'rejects an invalid tag'
-        local file="_test/file.ext"
+      It 'returns 0 if a file has all the given tags'
+       local file="_test/file[tag1 tag2].ext"
         touch "$file"
-        When call tsp file has "$file" '['
-        The status should equal 1
-        The stderr should not equal ""
-        The file "$file" should be exist
-      End
-
-      It 'returns 0 if a file has the given tag'
-        local file="_test/file[t u v].ext"
-        touch "$file"
-        When call tsp file has "$file" u
+        When call tsp file has "$file" 'tag1 tag2'
         The status should equal 0
       End
 
-      It 'returns 1 if a file does not have the given tag'
-        local file="_test/file[t].ext"
+      It 'returns 1 if a file is missing any of the given tags'
+        local file="_test/file[tag1 tag2].ext"
         touch "$file"
-        When call tsp file has "$file" u
+        When call tsp file has "$file" 'tag1 tag2 tag3'
+        The status should equal 1
+      End
+
+      It 'returns 0 if a file has all the given tags and more'
+        local file="_test/file[tag1 tag2 tag3].ext"
+        touch "$file"
+        When call tsp file has "$file" 'tag1 tag2'
+        The status should equal 0
+      End
+
+      It 'returns 0 if a file has tags matching all the given glob patterns'
+        local file="_test/file[tag11 tag22].ext"
+        touch "$file"
+        When call tsp file has "$file" 'tag1* tag2*'
+        The status should equal 0
+      End
+
+      It "returns 1 if one pattern isn't matched by any of the file's tags"
+        local file="_test/file[tag11 tag22].ext"
+        touch "$file"
+        When call tsp file has "$file" 'tag1* tag2* tag3*'
         The status should equal 1
       End
     End
@@ -322,14 +334,10 @@ $file2"
     End
 
     Describe 'remove'
-
-      It 'rejects an invalid tag'
-        local file="_test/file.ext"
-        touch "$file"
-        When call tsp tag remove ']' "$file"
+      It "rejects tag pattern '*'"
+        When call tsp tag remove '*' '_test/file'
         The status should equal 1
         The stderr should not equal ""
-        The file "$file" should be exist
       End
 
       It 'rejects a directory'
@@ -341,12 +349,12 @@ $file2"
         The path "$dir" should be directory
       End
 
-      It 'removes a tag from a file with a tag group'
-        local file="_test/file[tag1 tag2].ext"
+      It 'removes a tag matching a pattern from a file with a tag group'
+        local file="_test/file[tag11 tag22].ext"
         touch "$file"
-        When call tsp tag remove tag1 "$file"
+        When call tsp tag remove 'tag1*' "$file"
         The file "$file" should not be exist
-        The file "_test/file[tag2].ext" should be exist
+        The file "_test/file[tag22].ext" should be exist
       End
 
       It 'leaves a file without the given tag unchanged'

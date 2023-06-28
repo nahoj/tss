@@ -59,16 +59,19 @@ list_files_in_paths() {
 
 tsp_tag_files_aux() {
   local -i with_0_without_1
-  local tag paths
+  local tag_patterns paths
   with_0_without_1=$1
-  tag=$2
-  require_tag_valid $tag
+  tag_patterns=(${(z)2})
+  if [[ ${#tag_patterns} -eq 0 ]]; then
+    print -r "No tag patterns given" >&2
+    return 1
+  fi
   shift 2
   paths=("$@")
 
   local file_path
   list_files_in_paths "${paths[@]}" | while IFS= read -r file_path; do
-    if ! (( $(status tsp_file_has $file_path $tag) ^^ with_0_without_1 )); then
+    if ! (( $(status tsp_file_has $file_path "$tag_patterns") ^^ with_0_without_1 )); then
       print -r $file_path
     fi
   done
@@ -84,13 +87,32 @@ tsp_tag_files_without() {
   tsp_tag_files_aux 1 "$@"
 }
 
-# Remove tag from each of the given files if present
-tsp_tag_remove() {
-  local tags tag file_paths
-  tags=(${(z)1})
-  for tag in "${tags[@]}"; do
-    require_tag_valid $tag
+tsp_tag_in_patterns() {
+  local tag tag_patterns
+  tag=$1
+  tag_patterns=(${(z)2})
+  if [[ ${#tag_patterns} -eq 0 ]]; then
+    print -r "No tag patterns given" >&2
+    return 1
+  fi
+
+  local pattern
+  for pattern in "${tag_patterns[@]}"; do
+    if [[ $tag = ${~pattern} ]]; then
+      return 0
+    fi
   done
+  return 1
+}
+
+tsp_tag_remove() {
+  local tag_patterns file_paths
+  tag_patterns=(${(z)1})
+  if ((tag_patterns[(Ie)*])); then
+    print -r "Removing all tags with * is forbidden as it might be a mistake. If this is what you want to do, use:" >&2
+    print -r "    tsp file clean FILE ..." >&2
+    return 1
+  fi
   shift
   file_paths=("$@")
 
@@ -98,13 +120,16 @@ tsp_tag_remove() {
   for file_path in "$@"; do
     require_file_exists_not_dir $file_path
 
-    local file_tags new_tags
-    file_tags=($(tsp_file_tags $file_path))
-    new_tags=($file_tags)
-    for tag in "${tags[@]}"; do
-      new_tags=("${(@)new_tags:#$tag}")
+    local old_tags new_tags tag
+    old_tags=($(tsp_file_tags $file_path))
+    new_tags=()
+    for tag in "${old_tags[@]}"; do
+      if ! tsp_tag_in_patterns $tag "$tag_patterns"; then
+        new_tags+=($tag)
+      fi
     done
-    if ! arrayeq new_tags file_tags; then
+
+    if ! arrayeq new_tags old_tags; then
       tsp_file_set $file_path "$new_tags"
     fi
   done
