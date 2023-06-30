@@ -51,7 +51,7 @@ require_path_exists() {
   fi
 }
 
-tsp_file_has() {
+tss_file_has() {
   local file_path tag_patterns
   file_path=$1
   require_file_exists_not_dir $file_path
@@ -62,7 +62,7 @@ tsp_file_has() {
   fi
 
   local tags
-  tags=($(tsp_file_tags $file_path))
+  tags=($(tss_file_tags $file_path))
 
   if [[ ${#tags} -eq 0 ]]; then
     return 1
@@ -86,7 +86,7 @@ tsp_file_has() {
   fi
 }
 
-tsp_file_clean_one_file() {
+tss_file_clean_one_file() {
   unsetopt warn_create_global warn_nested_var
 
   local file_path file_name
@@ -109,16 +109,16 @@ tsp_file_clean_one_file() {
 }
 
 # remove tag group from the given files
-tsp_file_clean() {
+tss_file_clean() {
   local file_path
   local -i statuss=0
   for file_path in "$@"; do
-    tsp_file_clean_one_file $file_path || statuss=$?
+    tss_file_clean_one_file $file_path || statuss=$?
   done
   return $statuss
 }
 
-tsp_file_set() {
+tss_file_set() {
   unsetopt warn_create_global warn_nested_var
 
   local file_path tags
@@ -128,7 +128,7 @@ tsp_file_set() {
 
   # if tags empty, clean file
   if [[ ${#tags[@]} -eq 0 ]]; then
-    tsp_file_clean $file_path
+    tss_file_clean $file_path
 
   else
     local file_name
@@ -163,7 +163,7 @@ tsp_file_set() {
 }
 
 # Prints the tags for the given file, or an empty string if the file has no tags
-tsp_file_tags() {
+tss_file_tags() {
   local file_path
   file_path=$1
   require_file_exists_not_dir $file_path
@@ -173,28 +173,28 @@ tsp_file_tags() {
   print -r "${tags[@]}"
 }
 
-tsp_file() {
+tss_file() {
   local subcommand
   subcommand=$1
   shift
   case $subcommand in
 #    add)
-#      tsp_file_add "$@"
+#      tss_file_add "$@"
 #      ;;
     clean)
-      tsp_file_clean "$@"
+      tss_file_clean "$@"
       ;;
     has)
-      tsp_file_has "$@"
+      tss_file_has "$@"
       ;;
     tags)
-      tsp_file_tags "$@"
+      tss_file_tags "$@"
       ;;
     location)
-      tsp_location_of "$@"
+      tss_location_of "$@"
       ;;
 #    remove)
-#      tsp_file_remove "$@"
+#      tss_file_remove "$@"
 #      ;;
     *)
       print -r "Unknown subcommand: $subcommand" >&2

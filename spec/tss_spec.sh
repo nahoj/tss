@@ -1,5 +1,5 @@
-Describe 'tsp'
-  alias tsp='src/tsp'
+Describe 'tss'
+  alias tss='src/tss'
   BeforeEach 'rm -rf _test && mkdir _test'
   AfterEach 'rm -rf _test'
 
@@ -8,13 +8,13 @@ Describe 'tsp'
       It 'rejects a file'
         local file="_test/file"
         touch "$file"
-        When call tsp dir all-tags "$file"
+        When call tss dir all-tags "$file"
         The status should equal 1
         The stderr should not equal ""
       End
 
       It 'rejects a directory that does not exist'
-        When call tsp dir all-tags _test/dir
+        When call tss dir all-tags _test/dir
         The status should equal 1
         The stderr should not equal ""
       End
@@ -23,7 +23,7 @@ Describe 'tsp'
         local file1="_test/file1[tag1]"
         touch "$file1"
         pushd _test >/dev/null
-        When call tsp dir all-tags
+        When call tss dir all-tags
         popd >/dev/null
         The status should equal 0
         The output should equal "tag1"
@@ -34,7 +34,7 @@ Describe 'tsp'
         local file1="_test/dir/file1[tag3 tag2]"
         local file2="_test/dir/file2[tag2 tag1].ext"
         touch "$file1" "$file2"
-        When call tsp dir all-tags _test/dir
+        When call tss dir all-tags _test/dir
         The status should equal 0
         The output should equal "tag1
 tag2
@@ -46,7 +46,7 @@ tag3"
         local file1="_test/dir/file1"
         local file2="_test/dir/file2.ext"
         touch "$file1" "$file2"
-        When call tsp dir all-tags _test/dir
+        When call tss dir all-tags _test/dir
         The status should equal 0
         The output should equal ""
       End
@@ -56,7 +56,7 @@ tag3"
         local file1="_test/dir1/dir2/file1[tag1 tag2]"
         local file2="_test/dir1/dir2/file2[tag3].ext"
         touch "$file1" "$file2"
-        When call tsp dir all-tags _test/dir1
+        When call tss dir all-tags _test/dir1
         The status should equal 0
         The output should equal "tag1
 tag2
@@ -71,7 +71,7 @@ tag3"
     Describe 'clean'
       It 'rejects a directory'
         mkdir _test/dir
-        When call tsp file clean _test/dir
+        When call tss file clean _test/dir
         The status should equal 1
         The stderr should not equal ""
         The path "_test/dir" should be directory
@@ -79,7 +79,7 @@ tag3"
 
       It 'rejects a file with an ill-formed name'
         touch "_test/file[tag1 tag2"
-        When call tsp file clean "_test/file[tag1 tag2"
+        When call tss file clean "_test/file[tag1 tag2"
         The status should equal 1
         The stderr should not equal ""
         The file "_test/file[tag1 tag2" should be exist
@@ -89,7 +89,7 @@ tag3"
         local file1="_test/file1[tag1 tag2"
         local file2="_test/file2[tag3].ext"
         touch "$file1" "$file2"
-        When call tsp file clean "$file1" "$file2"
+        When call tss file clean "$file1" "$file2"
         The status should equal 1
         The stderr should not equal ""
         The file "$file1" should be exist
@@ -100,7 +100,7 @@ tag3"
       It 'removes a tag group from a file with tags'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
-        When call tsp file clean "$file"
+        When call tss file clean "$file"
         The file "$file" should not be exist
         The file "_test/file.ext" should be exist
       End
@@ -108,7 +108,7 @@ tag3"
       It 'removes a tag group from a file with an empty tag group'
         local file="_test/file[].ext"
         touch "$file"
-        When call tsp file clean "$file"
+        When call tss file clean "$file"
         The file "$file" should not be exist
         The file "_test/file.ext" should be exist
       End
@@ -116,7 +116,7 @@ tag3"
       It 'leaves a file with no tag group unchanged'
         local file="_test/file.ext"
         touch "$file"
-        When call tsp file clean "$file"
+        When call tss file clean "$file"
         The file "$file" should be exist
       End
 
@@ -124,7 +124,7 @@ tag3"
         local file1="_test/file1[tag1 tag2].ext"
         local file2="_test/file2[tag3].ext"
         touch "$file1" "$file2"
-        When call tsp file clean "$file1" "$file2"
+        When call tss file clean "$file1" "$file2"
         The file "$file1" should not be exist
         The file "_test/file1.ext" should be exist
         The file "$file2" should not be exist
@@ -134,7 +134,7 @@ tag3"
 
     Describe 'has'
       It 'rejects a nonexistent file'
-        When call tsp file has _test/file tag
+        When call tss file has _test/file tag
         The status should equal 1
         The stderr should not equal ""
       End
@@ -142,7 +142,7 @@ tag3"
       It 'rejects a directory'
         local dir="_test/dir"
         mkdir "$dir"
-        When call tsp file has _test/dir tag
+        When call tss file has _test/dir tag
         The status should equal 1
         The stderr should not equal ""
         The path "$dir" should be directory
@@ -151,42 +151,42 @@ tag3"
       It 'returns 0 if a file has all the given tags'
        local file="_test/file[tag1 tag2].ext"
         touch "$file"
-        When call tsp file has "$file" 'tag1 tag2'
+        When call tss file has "$file" 'tag1 tag2'
         The status should equal 0
       End
 
       It 'returns 1 if a file is missing any of the given tags'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
-        When call tsp file has "$file" 'tag1 tag2 tag3'
+        When call tss file has "$file" 'tag1 tag2 tag3'
         The status should equal 1
       End
 
       It 'returns 0 if a file has all the given tags and more'
         local file="_test/file[tag1 tag2 tag3].ext"
         touch "$file"
-        When call tsp file has "$file" 'tag1 tag2'
+        When call tss file has "$file" 'tag1 tag2'
         The status should equal 0
       End
 
       It 'returns 0 if a file has tags matching all the given glob patterns'
         local file="_test/file[tag11 tag22].ext"
         touch "$file"
-        When call tsp file has "$file" 'tag1* tag2*'
+        When call tss file has "$file" 'tag1* tag2*'
         The status should equal 0
       End
 
       It "returns 1 if one pattern isn't matched by any of the file's tags"
         local file="_test/file[tag11 tag22].ext"
         touch "$file"
-        When call tsp file has "$file" 'tag1* tag2* tag3*'
+        When call tss file has "$file" 'tag1* tag2* tag3*'
         The status should equal 1
       End
     End
 
     Describe 'tags'
       It 'rejects a nonexistent file'
-        When call tsp file tags _test/file
+        When call tss file tags _test/file
         The status should equal 1
         The stderr should not equal ""
       End
@@ -194,7 +194,7 @@ tag3"
       It 'rejects a directory'
         local dir="_test/dir"
         mkdir "$dir"
-        When call tsp file tags "$dir"
+        When call tss file tags "$dir"
         The status should equal 1
         The stderr should not equal ""
         The path "$dir" should be directory
@@ -203,21 +203,21 @@ tag3"
       It 'lists tags for a file with tags'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
-        When call tsp file tags "$file"
+        When call tss file tags "$file"
         The output should equal 'tag1 tag2'
       End
 
       It 'lists tags for a file with an empty tag group'
         local file="_test/file[].ext"
         touch "$file"
-        When call tsp file tags "$file"
+        When call tss file tags "$file"
         The output should equal ''
       End
 
       It 'lists tags for a file with no tag group'
         local file="_test/file.ext"
         touch "$file"
-        When call tsp file tags "$file"
+        When call tss file tags "$file"
         The output should equal ''
       End
     End
@@ -230,7 +230,7 @@ tag3"
       It 'rejects an invalid tag'
         local file="_test/file.ext"
         touch "$file"
-        When call tsp tag add '[' "$file"
+        When call tss tag add '[' "$file"
         The status should equal 1
         The stderr should not equal ""
         The file "$file" should be exist
@@ -239,7 +239,7 @@ tag3"
       It 'rejects a directory'
         local dir="_test/dir"
         mkdir "$dir"
-        When call tsp tag add tag "$dir"
+        When call tss tag add tag "$dir"
         The status should equal 1
         The stderr should not equal ""
         The path "$dir" should be directory
@@ -248,7 +248,7 @@ tag3"
       It 'adds a tag to a file with a tag group'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
-        When call tsp tag add tag3 "$file"
+        When call tss tag add tag3 "$file"
         The file "$file" should not be exist
         The file "_test/file[tag1 tag2 tag3].ext" should be exist
       End
@@ -256,7 +256,7 @@ tag3"
       It 'adds a tag to a file with an empty tag group'
         local file="_test/file[].ext"
         touch "$file"
-        When call tsp tag add tag "$file"
+        When call tss tag add tag "$file"
         The file "$file" should not be exist
         The file "_test/file[tag].ext" should be exist
       End
@@ -264,7 +264,7 @@ tag3"
       It 'adds a tag to a file with no tag group and which has an extension'
         local file="_test/file.ext"
         touch "$file"
-        When call tsp tag add tag "$file"
+        When call tss tag add tag "$file"
         The file "$file" should not be exist
         The file "_test/file[tag].ext" should be exist
       End
@@ -272,7 +272,7 @@ tag3"
       It 'adds a tag to a file with no tag group and no extension'
         local file="_test/file"
         touch "$file"
-        When call tsp tag add tag "$file"
+        When call tss tag add tag "$file"
         The file "$file" should not be exist
         The file "_test/file[tag]" should be exist
       End
@@ -281,7 +281,7 @@ tag3"
         local file1="_test/file1[tag1 tag2].ext"
         local file2="_test/file2.ext"
         touch "$file1" "$file2"
-        When call tsp tag add tag3 "$file1" "$file2"
+        When call tss tag add tag3 "$file1" "$file2"
         The file "$file1" should not be exist
         The file "_test/file1[tag1 tag2 tag3].ext" should be exist
         The file "$file2" should not be exist
@@ -291,7 +291,7 @@ tag3"
       It 'adds several tags to a file, normalizing spaces'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
-        When call tsp tag add ' tag3   tag4 ' "$file"
+        When call tss tag add ' tag3   tag4 ' "$file"
         The file "$file" should not be exist
         The file "_test/file[tag1 tag2 tag3 tag4].ext" should be exist
       End
@@ -299,7 +299,7 @@ tag3"
       It 'only adds missing tags to a file'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
-        When call tsp tag add 'tag1 tag3' "$file"
+        When call tss tag add 'tag1 tag3' "$file"
         The file "$file" should not be exist
         The file "_test/file[tag1 tag2 tag3].ext" should be exist
       End
@@ -307,7 +307,7 @@ tag3"
 
     Describe 'files'
       It 'rejects an invalid tag'
-        When call tsp tag files ' '
+        When call tss tag files ' '
         The status should equal 1
         The stderr should not equal ""
       End
@@ -317,7 +317,7 @@ tag3"
         local file2="_test/file2[tag1].ext"
         local file3="_test/file3[tag2].ext"
         touch "$file1" "$file2" "$file3"
-        When call tsp tag files tag1 "_test"
+        When call tss tag files tag1 "_test"
         The status should equal 0
         The output should equal "$file1
 $file2"
@@ -327,7 +327,7 @@ $file2"
         local subdir="_test/subdir"
         mkdir "$subdir"
         touch "$subdir/file1[tag1].ext"
-        When call tsp tag files tag1 "_test"
+        When call tss tag files tag1 "_test"
         The status should equal 0
         The output should equal "$subdir/file1[tag1].ext"
       End
@@ -335,7 +335,7 @@ $file2"
 
     Describe 'remove'
       It "rejects tag pattern '*'"
-        When call tsp tag remove '*' '_test/file'
+        When call tss tag remove '*' '_test/file'
         The status should equal 1
         The stderr should not equal ""
       End
@@ -343,7 +343,7 @@ $file2"
       It 'rejects a directory'
         local dir="_test/dir"
         mkdir "$dir"
-        When call tsp tag remove tag "$dir"
+        When call tss tag remove tag "$dir"
         The status should equal 1
         The stderr should not equal ""
         The path "$dir" should be directory
@@ -352,7 +352,7 @@ $file2"
       It 'removes a tag matching a pattern from a file with a tag group'
         local file="_test/file[tag11 tag22].ext"
         touch "$file"
-        When call tsp tag remove 'tag1*' "$file"
+        When call tss tag remove 'tag1*' "$file"
         The file "$file" should not be exist
         The file "_test/file[tag22].ext" should be exist
       End
@@ -360,14 +360,14 @@ $file2"
       It 'leaves a file without the given tag unchanged'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"
-        When call tsp tag remove tag3 "$file"
+        When call tss tag remove tag3 "$file"
         The file "$file" should be exist
       End
 
       It 'leaves a file with no tag group unchanged'
         local file="_test/file.ext"
         touch "$file"
-        When call tsp tag remove tag "$file"
+        When call tss tag remove tag "$file"
         The file "$file" should be exist
       End
 
@@ -375,7 +375,7 @@ $file2"
         local file1="_test/file1[tag1 tag2].ext"
         local file2="_test/file2[tag1 tag2].ext"
         touch "$file1" "$file2"
-        When call tsp tag remove tag1 "$file1" "$file2"
+        When call tss tag remove tag1 "$file1" "$file2"
         The file "$file1" should not be exist
         The file "_test/file1[tag2].ext" should be exist
         The file "$file2" should not be exist
@@ -385,7 +385,7 @@ $file2"
       It 'removes several tags from a file'
         local file="_test/file[tag1 tag2 tag3 tag4].ext"
         touch "$file"
-        When call tsp tag remove 'tag1 tag3' "$file"
+        When call tss tag remove 'tag1 tag3' "$file"
         The file "$file" should not be exist
         The file "_test/file[tag2 tag4].ext" should be exist
       End

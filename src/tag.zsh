@@ -11,7 +11,7 @@ require_tag_valid() {
 }
 
 # Add one or more tags to one or more files if not already present
-tsp_tag_add() {
+tss_tag_add() {
   local tags tag file_paths
   tags=(${(z)1})
   for tag in "${tags[@]}"; do
@@ -25,7 +25,7 @@ tsp_tag_add() {
     require_file_exists_not_dir $file_path
 
     local file_tags new_tags
-    file_tags=($(tsp_file_tags $file_path))
+    file_tags=($(tss_file_tags $file_path))
     new_tags=($file_tags)
     for tag in "${tags[@]}"; do
       if ! ((new_tags[(Ie)$tag])); then
@@ -33,7 +33,7 @@ tsp_tag_add() {
       fi
     done
     if ! arrayeq new_tags file_tags; then
-      tsp_file_set $file_path "$new_tags"
+      tss_file_set $file_path "$new_tags"
     fi
   done
 }
@@ -57,7 +57,7 @@ list_files_in_paths() {
   done
 }
 
-tsp_tag_files_aux() {
+tss_tag_files_aux() {
   local -i with_0_without_1
   local tag_patterns paths
   with_0_without_1=$1
@@ -71,23 +71,23 @@ tsp_tag_files_aux() {
 
   local file_path
   list_files_in_paths "${paths[@]}" | while IFS= read -r file_path; do
-    if ! (( $(status tsp_file_has $file_path "$tag_patterns") ^^ with_0_without_1 )); then
+    if ! (( $(status tss_file_has $file_path "$tag_patterns") ^^ with_0_without_1 )); then
       print -r $file_path
     fi
   done
 }
 
 # List files with the given tag
-tsp_tag_files() {
-  tsp_tag_files_aux 0 "$@"
+tss_tag_files() {
+  tss_tag_files_aux 0 "$@"
 }
 
 # List files without the given tag
-tsp_tag_files_without() {
-  tsp_tag_files_aux 1 "$@"
+tss_tag_files_without() {
+  tss_tag_files_aux 1 "$@"
 }
 
-tsp_tag_in_patterns() {
+tss_tag_in_patterns() {
   local tag tag_patterns
   tag=$1
   tag_patterns=(${(z)2})
@@ -105,12 +105,12 @@ tsp_tag_in_patterns() {
   return 1
 }
 
-tsp_tag_remove() {
+tss_tag_remove() {
   local tag_patterns file_paths
   tag_patterns=(${(z)1})
   if ((tag_patterns[(Ie)*])); then
     print -r "Removing all tags with * is forbidden as it might be a mistake. If this is what you want to do, use:" >&2
-    print -r "    tsp file clean FILE ..." >&2
+    print -r "    tss file clean FILE ..." >&2
     return 1
   fi
   shift
@@ -121,36 +121,36 @@ tsp_tag_remove() {
     require_file_exists_not_dir $file_path
 
     local old_tags new_tags tag
-    old_tags=($(tsp_file_tags $file_path))
+    old_tags=($(tss_file_tags $file_path))
     new_tags=()
     for tag in "${old_tags[@]}"; do
-      if ! tsp_tag_in_patterns $tag "$tag_patterns"; then
+      if ! tss_tag_in_patterns $tag "$tag_patterns"; then
         new_tags+=($tag)
       fi
     done
 
     if ! arrayeq new_tags old_tags; then
-      tsp_file_set $file_path "$new_tags"
+      tss_file_set $file_path "$new_tags"
     fi
   done
 }
 
-tsp_tag() {
+tss_tag() {
   local subcommand
   subcommand=$1
   shift
   case $subcommand in
     add)
-      tsp_tag_add "$@"
+      tss_tag_add "$@"
       ;;
     files)
-      tsp_tag_files "$@"
+      tss_tag_files "$@"
       ;;
     files-without) # temporary?
-      tsp_tag_files_without "$@"
+      tss_tag_files_without "$@"
       ;;
     remove)
-      tsp_tag_remove "$@"
+      tss_tag_remove "$@"
       ;;
     *)
       print -r "Unknown subcommand: $subcommand" >&2

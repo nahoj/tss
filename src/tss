@@ -19,4 +19,4 @@ dir=${0:A:h}
 
 . "$dir/main.zsh"
 
-tsp "$@"
+tss "$@"

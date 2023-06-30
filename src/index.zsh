@@ -1,5 +1,5 @@
 
-tsp_location_index_all_tags() {
+tss_location_index_all_tags() {
   local pathh
   if [[ -n $1 ]]; then
     pathh=$1
@@ -9,7 +9,7 @@ tsp_location_index_all_tags() {
   fi
 
   local location index
-  location=$(tsp_location_of_dir_unsafe .)
+  location=$(tss_location_of_dir_unsafe .)
   if [[ -z $location ]]; then
     print "Not in a location" >&2
     return 1
@@ -80,7 +80,7 @@ make_json_file_object() {
   local json_tag_array='[]'
   if [[ $is_regular_file == 'true' ]]; then
     local file_tags tag_objects tag
-    file_tags=($(tsp_file_tags $file_path))
+    file_tags=($(tss_file_tags $file_path))
     tag_objects=("${(@f)$(for tag in "$file_tags[@]"; do make_json_tag_object $tag; done)}")
     json_tag_array="[${(j:, :)tag_objects[@]}]"
   fi
@@ -97,7 +97,7 @@ make_json_file_object() {
   print -r '  }'
 }
 
-tsp_location_index_build() {
+tss_location_index_build() {
   local location
   location=${1:-.}
   require_is_location "$location"
@@ -120,16 +120,16 @@ tsp_location_index_build() {
   with_lock_file "$location/.ts/tsi.json" with_cd "$location" do_build_index
 }
 
-tsp_location_index() {
+tss_location_index() {
   local subcommand
   subcommand=$1
   shift
   case $subcommand in
     all-tags)
-       tsp_location_index_all_tags "$@"
-       ;;
+      tss_location_index_all_tags "$@"
+      ;;
     build)
-      tsp_location_index_build "$@"
+      tss_location_index_build "$@"
       ;;
     *)
       print "Unknown subcommand $subcommand" >&2

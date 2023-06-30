@@ -1,18 +1,18 @@
-tsp() {
+tss() {
   local subcommand=$1
   shift
   case $subcommand in
     dir)
-      tsp_dir "$@"
+      tss_dir "$@"
       ;;
     file)
-      tsp_file "$@"
+      tss_file "$@"
       ;;
     location)
-      tsp_location "$@"
+      tss_location "$@"
       ;;
     tag)
-      tsp_tag "$@"
+      tss_tag "$@"
       ;;
     *)
       print -r "Unknown subcommand: $subcommand" >&2
