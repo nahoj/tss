@@ -1,4 +1,25 @@
 
+tsp_location_index_all_tags() {
+  local pathh
+  if [[ -n $1 ]]; then
+    pathh=$1
+    require_path_exists $pathh
+  else
+    pathh=.
+  fi
+
+  local location index
+  location=$(tsp_location_of_dir_unsafe .)
+  if [[ -z $location ]]; then
+    print "Not in a location" >&2
+    return 1
+  fi
+  index="$location/.ts/tsi.json"
+
+  # Get sorted, unique tags
+  jq -r '[.[].tags | .[].title] | unique | .[]' $index
+}
+
 make_json_string() {
   local s
   s=$1
@@ -74,33 +95,45 @@ make_json_file_object() {
   print -r '    "lmdt": '$stat[mtime]'000,'
   print -r '    "path": '$(make_json_string $file_path)
   print -r '  }'
-
 }
 
-tsp_location_build_index() {
+tsp_location_index_build() {
   local location
-  location=$1
+  location=${1:-.}
   require_is_location "$location"
 
-  if [[ -f "$location/.ts/tsi.json.lock" ]]; then
-    print "Index is locked" >&2
-    return 1
-  fi
-  touch "$location/.ts/tsi.json.lock"
-  pushd "$location" >/dev/null
-  trap "rm -f ${(q)location}/.ts/tsi.json.lock; popd >/dev/null" EXIT INT
-
-  print -r "Building index $location/.ts/tsi.json"
-  local file_path
-  print '[' >.ts/tsi.json
-  # Exclude hidden files
-  find * -regextype posix-extended -not -regex '.*/\.([^./]|\.[^/]).*' | {
-    read -r file_path || return 0
-    make_json_file_object $file_path
-    while read -r file_path; do
-      print ','
+  do_build_index() {
+    print -r "Building index $location/.ts/tsi.json"
+    local file_path
+    print '[' >.ts/tsi.json
+    # Exclude hidden files
+    find * -regextype posix-extended -not -regex '.*/\.([^./]|\.[^/]).*' | {
+      read -r file_path || return 0
       make_json_file_object $file_path
-    done
-  } >>.ts/tsi.json
-  print ']' >>.ts/tsi.json
+      while read -r file_path; do
+        print ','
+        make_json_file_object $file_path
+      done
+    } >>.ts/tsi.json
+    print ']' >>.ts/tsi.json
+  }
+  with_lock_file "$location/.ts/tsi.json" with_cd "$location" do_build_index
+}
+
+tsp_location_index() {
+  local subcommand
+  subcommand=$1
+  shift
+  case $subcommand in
+    all-tags)
+       tsp_location_index_all_tags "$@"
+       ;;
+    build)
+      tsp_location_index_build "$@"
+      ;;
+    *)
+      print "Unknown subcommand $subcommand" >&2
+      return 1
+      ;;
+  esac
 }

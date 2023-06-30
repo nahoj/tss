@@ -26,6 +26,36 @@ arrayeq() {
 # Evaluate the given arguments as a command and print the exit status
 status() {
   unsetopt err_exit err_return
-  eval "${(q)@[@]}" >/dev/null
+  $@ >/dev/null
   print $?
+}
+
+with_cd() {
+  local dir
+  dir=$1
+  shift
+
+  local return_dir
+  return_dir=$PWD
+  cd $dir
+  trap "cd ${(q)return_dir}" EXIT INT
+
+  $@
+}
+
+with_lock_file() {
+  local file
+  file=$1
+  shift
+
+  local lock_file
+  lock_file=$file.LOCK
+  if [[ -e $lock_file ]]; then
+    print -r "File is locked: ${(qqq)file}" >&2
+    return 1
+  fi
+  touch $lock_file
+  trap "rm -f ${(q)lock_file}" EXIT INT
+
+  $@
 }

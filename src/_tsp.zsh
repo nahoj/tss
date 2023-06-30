@@ -85,14 +85,39 @@ _tsp_file() {
   esac
 }
 
-_tsp_location_all_tags() {
+_tsp_location_index_all_tags() {
   _arguments -s \
              '1:location:_files'
 }
 
-_tsp_location_build_index() {
+_tsp_location_index_build() {
   _arguments -s \
              '1:location:_files -/'
+}
+
+_tsp_location_index() {
+  local line state
+
+  _arguments -sC \
+             "1: :->cmds" \
+             "*::arg:->args"
+  case "$state" in
+    cmds)
+      _values "tsp-location-index command" \
+              "all-tags[List all tags that appear in the index]" \
+              "build[Build index]" \
+      ;;
+    args)
+      case $line[1] in
+        all-tags)
+          _tsp_location_index_all_tags
+          ;;
+        build)
+          _tsp_location_index_build
+          ;;
+      esac
+      ;;
+  esac
 }
 
 _tsp_location_of() {
@@ -109,17 +134,13 @@ _tsp_location() {
   case "$state" in
     cmds)
       _values "tsp-location command" \
-              "all-tags[List all tags that appear under a given location]" \
-              "build-index[Build index]" \
+              "index[TODO descr]" \
               "of[Print the TagSpaces location of the given path, or an empty string]" \
       ;;
     args)
       case $line[1] in
-        all-tags)
-          _tsp_location_all_tags
-          ;;
-        build-index)
-          _tsp_location_build_index
+        index)
+          _tsp_location_index
           ;;
         of)
           _tsp_location_of

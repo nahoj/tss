@@ -10,23 +10,18 @@ require_is_location() {
 
 tsp_location_all_tags() {
   local pathh
-  if [[ -n $1 ]]; then
-    pathh=$1
-    require_path_exists $pathh
-  else
-    pathh=.
-  fi
+  pathh=${1:-.}
 
   local location index
-  location=$(tsp_location_of_dir_unsafe .)
-  if [[ -z $location ]]; then
-    print "Not in a location" >&2
-    return 1
-  fi
+  location=$(tsp_location_of $pathh)
   index="$location/.ts/tsi.json"
 
-  # Get sorted, unique tags
-  jq -r '[.[].tags | .[].title] | unique | .[]' $index
+  # if index is > 20 minutes old, refresh it
+  if [[ ! -f $index || $(zstat +mtime $index) -lt $(($(date +%s) - 1200)) ]]; then
+    tsp_location_index_build $location
+  fi
+
+  tsp_location_index_all_tags $location
 }
 
 # Return the given dir if it is a location, or its closest ancestor that is a location,
@@ -66,8 +61,8 @@ tsp_location() {
     all-tags)
       tsp_location_all_tags "$@"
       ;;
-    build-index)
-      tsp_location_build_index "$@"
+    index)
+      tsp_location_index "$@"
       ;;
     of)
       tsp_location_of "$@"
