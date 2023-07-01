@@ -20,6 +20,7 @@ tss_location_index_all_tags() {
   jq -r '[.[].tags | .[].title] | unique | .[]' $index
 }
 
+# (>100x as fast as calling jq on a single string)
 make_json_string() {
   local s
   s=$1

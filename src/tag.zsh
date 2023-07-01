@@ -57,34 +57,64 @@ list_files_in_paths() {
   done
 }
 
-tss_tag_files_aux() {
-  local -i with_0_without_1
-  local tag_patterns paths
-  with_0_without_1=$1
-  tag_patterns=(${(z)2})
-  if [[ ${#tag_patterns} -eq 0 ]]; then
-    print -r "No tag patterns given" >&2
-    return 1
+tss_tag_files() {
+  local help not
+  zparseopts -D -E -F - -help=help {!,-not}+:=not
+
+  if [[ -n $help ]]; then
+    cat <<EOF >&2
+
+Usage: tss tag files [options] <pattern...> <path>...
+
+Options:
+  -!, --not <pattern...> Exclude files that have any tag matching any of the given patterns
+  --help                 Show this help message
+
+EOF
+    return 0
   fi
-  shift 2
+
+  # process options
+  local anti_patterns=()
+  local -i i
+  for ((i=2; i <= ${#not}; i+=2)); do
+    anti_patterns+=(${(z)not[i]})
+  done
+
+  # process positional arguments
+  local patterns paths
+  patterns=(${(z)1})
+  shift 1
   paths=("$@")
 
-  local file_path
-  list_files_in_paths "${paths[@]}" | while IFS= read -r file_path; do
-    if ! (( $(status tss_file_has $file_path "$tag_patterns") ^^ with_0_without_1 )); then
-      print -r $file_path
-    fi
+  local file_path tags pattern tag
+  find ${paths:-*} -type f -not -path '*/.*' | while IFS= read -r file_path; do
+    tags=($(tss_file_tags $file_path))
+
+    for pattern in "${patterns[@]}"; do
+      for tag in "${tags[@]}"; do
+        if [[ $tag = ${~pattern} ]]; then
+          # pattern OK
+          continue 2
+        fi
+      done
+      # file KO
+      continue 2
+    done
+
+    for pattern in "${anti_patterns[@]}"; do
+      for tag in "${tags[@]}"; do
+        if [[ $tag = ${~pattern} ]]; then
+          # file KO
+          continue 3
+        fi
+      done
+      # pattern OK
+    done
+    # file OK
+
+    print -r $file_path
   done
-}
-
-# List files with the given tag
-tss_tag_files() {
-  tss_tag_files_aux 0 "$@"
-}
-
-# List files without the given tag
-tss_tag_files_without() {
-  tss_tag_files_aux 1 "$@"
 }
 
 tss_tag_in_patterns() {
@@ -145,9 +175,6 @@ tss_tag() {
       ;;
     files)
       tss_tag_files "$@"
-      ;;
-    files-without) # temporary?
-      tss_tag_files_without "$@"
       ;;
     remove)
       tss_tag_remove "$@"

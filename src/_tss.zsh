@@ -174,12 +174,12 @@ _tss_tag_add() {
       tag=$line[1]
       local files_newlines
       if [[ -z $line[$CURRENT] ]]; then
-        files_newlines=$(tss tag files-without $tag *)
+        files_newlines=$(tss tag files -! $tag *)
       else
         if [[ $line[$CURRENT] =~ ' $' ]]; then
-          files_newlines=$(tss tag files-without $tag $line[$CURRENT])
+          files_newlines=$(tss tag files -! $tag $line[$CURRENT])
         else
-          files_newlines=$(tss tag files-without $tag $line[$CURRENT]*)
+          files_newlines=$(tss tag files -! $tag $line[$CURRENT]*)
         fi
       fi
       local files_array
@@ -270,7 +270,6 @@ _tss_tag() {
       _values "tss-tag command" \
               "add[Add one or more tags to one or more files.]" \
               "files[List files with a given tag under the given paths.]" \
-              "files-without[List files without a given tag under the given paths.]" \
               "remove[Remove one or more tags from one or more files.]" \
       ;;
     args)
@@ -280,9 +279,6 @@ _tss_tag() {
           ;;
         files)
           _tss_tag_files
-          ;;
-        files-without)
-          _tss_tag_files_without
           ;;
         remove)
           _tss_tag_remove
