@@ -34,7 +34,7 @@ tss_location_of_dir_unsafe() {
     print -r $dir
   else
     if [[ $dir == "/" ]]; then
-      print
+      return 1
     else
       tss_location_of_dir_unsafe $(dirname $dir)
     fi

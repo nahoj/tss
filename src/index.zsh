@@ -9,11 +9,10 @@ tss_location_index_all_tags() {
   fi
 
   local location index
-  location=$(tss_location_of_dir_unsafe .)
-  if [[ -z $location ]]; then
+  location=$(tss_location_of_dir_unsafe .) || {
     print "Not in a location" >&2
     return 1
-  fi
+  }
   index="$location/.ts/tsi.json"
 
   # Get sorted, unique tags
@@ -59,7 +58,9 @@ make_json_string() {
 }
 
 make_json_tag_object() {
-  print -r '{ "title": '$(make_json_string $1)', "type": "plain" }'
+  local json_title
+  json_title=$(make_json_string $1)
+  print -r '{ "title": '$json_title', "type": "plain" }'
 }
 
 make_json_file_object() {
@@ -68,15 +69,18 @@ make_json_file_object() {
   local file_path
   file_path=$1
 
-  local file_name extension
+  local file_name json_file_name
   file_name=$(basename $file_path)
-  [[ $file_name =~ $file_name_maybe_tag_group_regex ]]
-  extension=${(e)${:-"$match[1]$match[4]"}}
+  json_file_name=$(make_json_string $file_name)
 
   local -A stat
   zstat -H stat $file_path
   local is_regular_file
   is_regular_file=$((( 0x8000 & stat[mode] )) && print 'true' || print 'false')
+
+  local extension
+  [[ $file_name =~ $file_name_maybe_tag_group_regex ]]
+  extension=$(make_json_string ${(e)${:-"$match[1]$match[4]"}})
 
   local json_tag_array='[]'
   if [[ $is_regular_file == 'true' ]]; then
@@ -86,22 +90,25 @@ make_json_file_object() {
     json_tag_array="[${(j:, :)tag_objects[@]}]"
   fi
 
+  local json_path
+  json_path=$(make_json_string $file_path)
+
   print -r '  {'
   print -r '    "uuid": "'$(uuidgen)'",'
-  print -r '    "name": '$(make_json_string $file_name)','
+  print -r '    "name": '$json_file_name','
   print -r '    "isFile": '$is_regular_file','
-  print -r '    "extension": '$(make_json_string $extension)','
+  print -r '    "extension": '$extension','
   print -r '    "tags": '$json_tag_array','
   print -r '    "size": '$stat[size]','
   print -r '    "lmdt": '$stat[mtime]'000,'
-  print -r '    "path": '$(make_json_string $file_path)
+  print -r '    "path": '$json_path
   print -r '  }'
 }
 
 tss_location_index_build() {
   local location
   location=${1:-.}
-  require_is_location "$location"
+  require_is_location $location
 
   do_build_index() {
     print -r "Building index $location/.ts/tsi.json"
@@ -121,6 +128,40 @@ tss_location_index_build() {
   with_lock_file "$location/.ts/tsi.json" with_cd "$location" do_build_index
 }
 
+tss_location_index_files() {
+  local -a opts
+  zparseopts -D -E -F -A opts - -path:
+  require_path_exists $opts[--path]
+
+  local location
+  location=$1
+  require_is_location $location
+
+  local index
+  index="$location/.ts/tsi.json"
+  jq -r --arg path $opts[--path] 'map(select(.isFile and (.path | startswith($path)))) | .[].path' $index
+}
+
+#files_with_tags() {
+#  local location
+#  location=${1:-.}
+#  require_is_location "$location"
+#
+#  local -aU tags
+#  tags=("$@")
+#  local tag
+#  for tag in "$tags[@]"; do
+#    [[ $tag =~ $tag_regex ]] || {
+#      print "Invalid tag: $tag" >&2
+#      return 1
+#    }
+#  done
+#
+#  local index
+#  index="$location/.ts/tsi.json"
+#  jq -r --argjson tags "$tags" 'map(select(.tags | any(.title; . as $t | $tags | any($t == .)))) | .[].path' $index
+#}
+
 tss_location_index() {
   local subcommand
   subcommand=$1
@@ -128,6 +169,9 @@ tss_location_index() {
   case $subcommand in
     all-tags)
       tss_location_index_all_tags "$@"
+      ;;
+    files)
+      tss_location_index_files "$@"
       ;;
     build)
       tss_location_index_build "$@"
