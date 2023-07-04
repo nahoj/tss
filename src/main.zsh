@@ -26,6 +26,9 @@ tss() {
     tag)
       tss_tag "$@"
       ;;
+    util)
+      tss_util "$@"
+      ;;
     *)
       print -r "Unknown subcommand: $subcommand" >&2
       return 1

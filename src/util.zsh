@@ -1,7 +1,3 @@
-setopt -m err_return 'local*' no_unset pipe_fail typeset_silent 'warn*'
-
-zmodload -F zsh/stat b:zstat
-
 # From https://stackoverflow.com/a/76516890
 # Takes the names of two array variables
 arrayeq() {
@@ -21,6 +17,17 @@ arrayeq() {
         return 1
     fi
   done
+}
+
+tss_util_file_with_tag_pattern() {
+  local p
+  p=$1
+  if [[ $p = *[[:space:]]* ]]; then
+    print -r "Invalid pattern (contains whitespace); please provide a pattern for a single tag." >&2
+    return 1
+  fi
+
+  print -r "*[[](($p)|($p)[:space:]*|*[:space:]($p)|*[:space:]($p)[:space:]*)[]]*(.)"
 }
 
 # Evaluate the given arguments as a command and print the exit status
@@ -64,4 +71,19 @@ with_lock_file() {
   } always {
     rm -f $lock_file
   }
+}
+
+tss_util() {
+  local subcommand
+  subcommand=$1
+  shift
+  case "$subcommand" in
+    file-with-tag-pattern)
+      tss_util_file_with_tag_pattern "$@"
+      ;;
+    *)
+      print -r "Unknown subcommand: $subcommand" >&2
+      return 1
+      ;;
+  esac
 }

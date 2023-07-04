@@ -2,6 +2,19 @@
 
 # Description: Zsh completion script for the 'tss' command
 
+# Escape special characters in a raw string to give to _values
+escape_value() {
+  for c in ${(s::)1}; do
+    case $c in
+      [][:\\+-])
+        print -nr -- "\\$c"
+        ;;
+      *)
+        print -nr -- $c
+    esac
+  done
+}
+
 _tss_dir_all_tags() {
   _arguments -s \
              '1:dir:_files -/'
@@ -88,26 +101,35 @@ _tss_add() {
             if [[ $#all_regular_files -ne 0 ]]; then
               local files
               files=($(tss tag files '' -T ${(b)tags[1]} "$all_regular_files[@]"))
-              _values "file" "${(b)files[@]}"
+              local values
+              values=("${(@f)$(escape_value "${(F)files}")}")
+              _values "file" "$values[@]"
             fi
           else
             # Give up on filtering
-            _files
+            _files -g '*(.)'
           fi
         fi
 
       else
         # Too complex to filter
-        _files
+        _files -g '*(.)'
       fi
       ;;
   esac
 }
 
-# tss file clean takes  one or more files as positional arguments
+# tss file clean takes one or more files as positional arguments
 _tss_clean() {
   _arguments -s \
-             '*:file:_files'
+             '*::file:->files'
+
+  case "$state" in
+    files)
+      # Regular files with a tag group
+      _files -g '*[[]*[]]*(.)'
+      ;;
+  esac
 }
 
 _tss_remove() {
@@ -136,7 +158,7 @@ _tss_remove() {
       ;;
 
     files)
-      # We aim to offer files that have any tag matching any of the given patterns
+      # Offer files that have any tag matching any of the given patterns
       local -aU patterns
       patterns=(${(s: :)${(Q)line[1]}})
       local filter_pattern="(${(j:|:)patterns})"
@@ -154,22 +176,7 @@ _tss_remove() {
         _multi_parts / files_array
 
       else
-        # Don't browse recursively, just read $line[$CURRENT]'s dir
-        local dirs
-        dirs=($line[$CURRENT]*(/))
-        if [[ $#dirs -eq 0 ]]; then
-          # Offer filtered files
-          local all_regular_files
-          all_regular_files=($line[$CURRENT]*(.))
-          if [[ $#all_regular_files -ne 0 ]]; then
-            local files
-            files=($(tss tag files $filter_pattern "$all_regular_files[@]"))
-            _values "file" "${(b)files[@]}"
-          fi
-        else
-          # Give up on filtering
-          _files
-        fi
+        _files -g "$(tss util file-with-tag-pattern $filter_pattern)"
       fi
       ;;
   esac
@@ -324,6 +331,26 @@ _tss_tag() {
   esac
 }
 
+_tss_util() {
+  local line state
+
+  _arguments -sC \
+             "1: :->cmds" \
+             "*::arg:->args"
+  case "$state" in
+    cmds)
+      _values "tss-tag command" \
+              "file-with-tag-pattern[Output a glob pattern matching any file with a tag matching the given pattern]" \
+      ;;
+    args)
+      case $line[1] in
+        file-with-tag-pattern)
+          ;;
+      esac
+      ;;
+  esac
+}
+
 _tss() {
   local line state
 
@@ -340,6 +367,7 @@ _tss() {
               "location[TODO descr]" \
               "remove[Remove tags from one or more files.]" \
               "tag[blah]" \
+              "util[blah]" \
       ;;
     args)
       case $line[1] in
@@ -363,6 +391,9 @@ _tss() {
           ;;
         tag)
           _tss_tag
+          ;;
+        util)
+          _tss_util
           ;;
       esac
       ;;
