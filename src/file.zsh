@@ -40,6 +40,18 @@ require_exists_taggable() {
   fi
 }
 
+require_well_formed() {
+  unsetopt warn_create_global warn_nested_var
+
+  local file_path
+  file_path=$1
+
+  if [[ ! $file_path =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
+    print -r "Ill-formed file name: ${(qqq)file_path}" >&2
+    return 1
+  fi
+}
+
 tss_file_has() {
   local file_path tag_patterns
   file_path=$1
@@ -99,82 +111,6 @@ tss_file_list() {
   done
 }
 
-tss_file_clean_one_file() {
-  unsetopt warn_create_global warn_nested_var
-
-  local file_path file_name
-  file_path=$1
-  require_exists_taggable $file_path
-  file_name=$(basename $file_path)
-  if ! [[ $file_name =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
-    print -r "Ignoring file with ill-formed name: ${(qqq)file_path}" >&2
-    return 1
-  fi
-
-  local new_file_name
-  new_file_name="$match[1]$match[4]"
-  if [[ $new_file_name != $file_name ]]; then
-    local new_file_path
-    new_file_path="$(dirname $file_path)/$new_file_name"
-    require_does_not_exist $new_file_path
-    mv $file_path $new_file_path
-  fi
-}
-
-# remove tag group from the given files
-tss_file_clean() {
-  local file_path
-  local -i statuss=0
-  for file_path in "$@"; do
-    tss_file_clean_one_file $file_path || statuss=$?
-  done
-  return $statuss
-}
-
-tss_file_set() {
-  unsetopt warn_create_global warn_nested_var
-
-  local file_path tags
-  file_path=$1
-  require_exists_taggable $file_path
-  tags=(${(s: :)2})
-
-  # if tags empty, clean file
-  if [[ ${#tags[@]} -eq 0 ]]; then
-    tss_file_clean $file_path
-
-  else
-    local file_name
-    file_name=$(basename $file_path)
-
-    if ! [[ "$file_name" =~ $file_name_maybe_tag_group_regex ]]; then
-      print -r "Invalid file name: ${(qqq)file_path}" >&2
-      return 1
-    fi
-
-    # If file has tag group, replace it
-    local new_file_name
-    if [[ -n $match[2] ]]; then
-      new_file_name="$match[1][${tags[@]}]$match[4]"
-
-    # Else, insert tag group before extension if present, else at end of file name
-    else
-      if [[ $file_name =~ '^(.+)(\.[^.]+)$' ]]; then
-        new_file_name="$match[1][${tags[@]}]$match[2]"
-      else
-        new_file_name="${file_name}[${tags[@]}]"
-      fi
-    fi
-
-    if [[ $new_file_name != $file_name ]]; then
-      local new_file_path
-      new_file_path="$(dirname $file_path)/$new_file_name"
-      require_does_not_exist $new_file_path
-      mv $file_path $new_file_path
-    fi
-  fi
-}
-
 # Prints the tags for the given file, or an empty string if the file has no tags
 tss_file_tags() {
   local file_path
@@ -191,12 +127,6 @@ tss_file() {
   subcommand=$1
   shift
   case $subcommand in
-#    add)
-#      tss_file_add "$@"
-#      ;;
-    clean)
-      tss_file_clean "$@"
-      ;;
     has)
       tss_file_has "$@"
       ;;
@@ -209,9 +139,6 @@ tss_file() {
     location)
       tss_location_of "$@"
       ;;
-#    remove)
-#      tss_file_remove "$@"
-#      ;;
     *)
       print -r "Unknown subcommand: $subcommand" >&2
       return 1

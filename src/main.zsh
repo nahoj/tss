@@ -2,6 +2,12 @@ tss() {
   local subcommand=$1
   shift
   case $subcommand in
+    add)
+      tss_add "$@"
+      ;;
+    clean)
+      tss_clean "$@"
+      ;;
     dir)
       tss_dir "$@"
       ;;
@@ -13,6 +19,9 @@ tss() {
       ;;
     location)
       tss_location "$@"
+      ;;
+    remove)
+      tss_remove "$@"
       ;;
     tag)
       tss_tag "$@"
