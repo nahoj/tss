@@ -3,7 +3,7 @@ tss_location_index_all_tags() {
   local pathh
   if [[ -n $1 ]]; then
     pathh=$1
-    require_path_exists $pathh
+    require_exists $pathh
   else
     pathh=.
   fi
@@ -50,7 +50,7 @@ make_json_string() {
         printf '\\u%04x' "'$c"
         ;;
       *)
-        print -nr $c
+        print -nr -- $c
         ;;
     esac
   done
@@ -130,16 +130,28 @@ tss_location_index_build() {
 
 tss_location_index_files() {
   local -a opts
-  zparseopts -D -E -F -A opts - -path:
-  require_path_exists $opts[--path]
+  zparseopts -D -E -F -A opts - -path: -path-starts-with:
 
   local location
   location=$1
   require_is_location $location
 
+  local condition='.isFile'
+  if [[ -v 'opts[--path]' ]]; then
+    require_exists $opts[--path]
+    if [[ -d $opts[--path] ]]; then
+      condition+=' and (.path | startswith('$(make_json_string "$opts[--path]/")'))'
+    else
+      condition+=' and .path == '$(make_json_string $opts[--path])
+    fi
+  fi
+  if [[ -v 'opts[--path-starts-with]' ]]; then
+    condition+=' and (.path | startswith('$(make_json_string $opts[--path-starts-with])'))'
+  fi
+
   local index
   index="$location/.ts/tsi.json"
-  jq -r --arg path $opts[--path] 'map(select(.isFile and (.path | startswith($path)))) | .[].path' $index
+  jq -r "map(select($condition)) | .[].path" $index
 }
 
 #files_with_tags() {

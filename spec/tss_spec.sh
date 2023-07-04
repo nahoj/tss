@@ -380,7 +380,7 @@ $file2"
         local file2="_test/file2[tag3].ext"
         local file3="_test/file3[tag4].ext"
         touch "$file1" "$file2" "$file3"
-        When call tss tag files '' --not 'tag1 tag3' "_test"
+        When call tss tag files '' -T 'tag1 tag3' "_test"
         The status should equal 0
         The output should equal "$file3"
       End

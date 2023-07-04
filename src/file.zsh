@@ -8,45 +8,34 @@ file_name_maybe_tag_group_regex='^([^[]*)(\[([^]]*)\])?(.*)$'
 
 well_formed_file_name_maybe_tag_group_regex='^([^][]*)(\[([^][]*)\])?([^][]*)$'
 
-# deprecated (use require_path_exists)?
-require_file_exists() {
+require_does_not_exist() {
   local file_path
   file_path=$1
 
-  if [[ ! -e $file_path ]]; then
-    print -r  "File not found: ${(qqq)file_path}" >&2
-    return 1
-  fi
-}
-
-require_file_exists_not_dir() {
-  local file_path
-  file_path=$1
-
-  require_file_exists $file_path
-
-  if [[ -d $file_path ]]; then
-    print -r  "File is a directory: ${(qqq)file_path}" >&2
-    return 1
-  fi
-}
-
-require_file_does_not_exist() {
-  local file_path
-  file_path=$1
-
-  if [[ -f $file_path ]]; then
+  if [[ -e $file_path ]]; then
     print -r  "File already exists: ${(qqq)file_path}" >&2
     return 1
   fi
 }
 
-require_path_exists() {
+require_exists() {
   local pathh
   pathh=$1
 
   if [[ ! -e $pathh ]]; then
-    print -r "Unknown file or directory: ${(qqq)pathh}" >&2
+    print -r "No such file or directory: ${(qqq)pathh}" >&2
+    return 1
+  fi
+}
+
+require_exists_taggable() {
+  local file_path
+  file_path=$1
+
+  require_exists $file_path
+
+  if [[ ! -f $file_path ]]; then
+    print -r  "Not a regular file: ${(qqq)file_path}" >&2
     return 1
   fi
 }
@@ -54,8 +43,8 @@ require_path_exists() {
 tss_file_has() {
   local file_path tag_patterns
   file_path=$1
-  require_file_exists_not_dir $file_path
-  tag_patterns=(${(z)2})
+  require_exists_taggable $file_path
+  tag_patterns=(${(s: :)2})
   if [[ ${#tag_patterns} -eq 0 ]]; then
     print -r "No tag patterns given" >&2
     return 1
@@ -86,12 +75,36 @@ tss_file_has() {
   fi
 }
 
+# List taggable files in the given paths
+tss_file_list() {
+  local paths
+  paths=("$@")
+  if [[ $#paths -eq 0 ]]; then
+    paths=(*)
+  fi
+
+  local pathh location
+  for pathh in "${paths[@]}"; do
+    require_exists $pathh
+
+    if [[ -d $pathh ]]; then
+      if location=$(tss_location_of $pathh); then
+        tss_location_index_files $location --path $pathh
+      else
+        print -lr $pathh/**/*(.)
+      fi
+    else
+      print -r $pathh
+    fi
+  done
+}
+
 tss_file_clean_one_file() {
   unsetopt warn_create_global warn_nested_var
 
   local file_path file_name
   file_path=$1
-  require_file_exists_not_dir $file_path
+  require_exists_taggable $file_path
   file_name=$(basename $file_path)
   if ! [[ $file_name =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
     print -r "Ignoring file with ill-formed name: ${(qqq)file_path}" >&2
@@ -103,7 +116,7 @@ tss_file_clean_one_file() {
   if [[ $new_file_name != $file_name ]]; then
     local new_file_path
     new_file_path="$(dirname $file_path)/$new_file_name"
-    require_file_does_not_exist $new_file_path
+    require_does_not_exist $new_file_path
     mv $file_path $new_file_path
   fi
 }
@@ -123,8 +136,8 @@ tss_file_set() {
 
   local file_path tags
   file_path=$1
-  require_file_exists_not_dir $file_path
-  tags=(${(z)2})
+  require_exists_taggable $file_path
+  tags=(${(s: :)2})
 
   # if tags empty, clean file
   if [[ ${#tags[@]} -eq 0 ]]; then
@@ -156,7 +169,7 @@ tss_file_set() {
     if [[ $new_file_name != $file_name ]]; then
       local new_file_path
       new_file_path="$(dirname $file_path)/$new_file_name"
-      require_file_does_not_exist $new_file_path
+      require_does_not_exist $new_file_path
       mv $file_path $new_file_path
     fi
   fi
@@ -166,7 +179,7 @@ tss_file_set() {
 tss_file_tags() {
   local file_path
   file_path=$1
-  require_file_exists_not_dir $file_path
+  require_exists_taggable $file_path
 
   local tags
   tags=($(basename $file_path | sed -En "s/$file_name_maybe_tag_group_regex/\3/p"))
@@ -186,6 +199,9 @@ tss_file() {
       ;;
     has)
       tss_file_has "$@"
+      ;;
+    list)
+      tss_file_list "$@"
       ;;
     tags)
       tss_file_tags "$@"

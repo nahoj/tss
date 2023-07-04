@@ -44,7 +44,7 @@ tss_location_of_dir_unsafe() {
 tss_location_of() {
   local pathh
   pathh=$1
-  require_file_exists $pathh
+  require_exists $pathh
 
   if [[ -d $pathh ]]; then
     tss_location_of_dir_unsafe $(realpath -s $pathh)

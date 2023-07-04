@@ -37,10 +37,13 @@ with_cd() {
 
   local return_dir
   return_dir=$PWD
-  cd $dir
-  trap "cd ${(q)return_dir}" EXIT INT
 
-  $@
+  cd $dir
+  {
+    $@
+  } always {
+    cd $return_dir
+  }
 }
 
 with_lock_file() {
@@ -54,8 +57,11 @@ with_lock_file() {
     print -r "File is locked: ${(qqq)file}" >&2
     return 1
   fi
-  touch $lock_file
-  trap "rm -f ${(q)lock_file}" EXIT INT
 
-  $@
+  touch $lock_file
+  {
+    $@
+  } always {
+    rm -f $lock_file
+  }
 }

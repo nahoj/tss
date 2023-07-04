@@ -8,6 +8,9 @@ tss() {
     file)
       tss_file "$@"
       ;;
+    filter)
+      tss_filter "$@"
+      ;;
     location)
       tss_location "$@"
       ;;

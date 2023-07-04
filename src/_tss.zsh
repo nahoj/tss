@@ -159,53 +159,68 @@ _tss_tag_add() {
 
   case "$state" in
     tags)
-      # one or more tags separated by spaces
-      local dir tags
-      dir=${$(tss file location .):-.} || return $?
-      tags=($(tss dir all-tags "$dir")) || return $?
-      if [[ ${#tags} -ne 0 ]]; then
-        _values -s ' ' "tag" \
-                "${tags[@]}"
+      # One or more tags separated by spaces
+      local location
+      local -aU tags
+      if location=$(tss file location .); then
+        tags=($(tss location index all-tags $location))
+      else
+        # All tags in the current directory
+        for f in *(.); do
+          tags+=($(tss file tags $f))
+        done
+      fi
+      if [[ $#tags -ne 0 ]]; then
+        _values -s ' ' "tag" "${tags[@]}"
       fi
       ;;
 
     files)
-      local tag
-      tag=$line[1]
-      local files_newlines
-      if [[ -z $line[$CURRENT] ]]; then
-        files_newlines=$(tss tag files -! $tag *)
-      else
-        if [[ $line[$CURRENT] =~ ' $' ]]; then
-          files_newlines=$(tss tag files -! $tag $line[$CURRENT])
+      local -aU tags
+      tags=(${(s: :)${(Q)line[1]}})
+
+      if [[ $#tags -eq 1 ]]; then
+        # Aim to offer files that don't have the tag
+        local location files_newlines
+
+        if location=$(tss file location .); then
+          local list_command=(tss location index files $location)
+          if [[ -n $line[$CURRENT] ]]; then
+            list_command+=(--path-starts-with $line[$CURRENT])
+          fi
+          files_newlines=$("$list_command[@]" | tss filter -T ${(b)tags[1]})
+          local files_array
+          files_array=("${(@f)files_newlines}")
+          _multi_parts / files_array
+
         else
-          files_newlines=$(tss tag files -! $tag $line[$CURRENT]*)
+          # Don't browse recursively, just read $line[$CURRENT]'s dir
+          local dirs
+          dirs=($line[$CURRENT]*(/))
+          if [[ $#dirs -eq 0 ]]; then
+            # Offer filtered files
+            local all_regular_files
+            all_regular_files=($line[$CURRENT]*(.))
+            if [[ $#all_regular_files -ne 0 ]]; then
+              local files
+              files=($(tss tag files '' -T ${(b)tags[1]} "$all_regular_files[@]"))
+              _values "file" "${(b)files[@]}"
+            fi
+          else
+            # Give up on filtering
+            _files
+          fi
         fi
+
+      else
+        # Too complex to filter
+        _files
       fi
-      local files_array
-      files_array=("${(@f)files_newlines}")
-      _multi_parts / files_array
       ;;
   esac
 }
 
 _tss_tag_files() {
-  _arguments -sC \
-             '1: :->tag' \
-             '*:file:_files'
-
-  case "$state" in
-    tag)
-      local dir tags
-      dir=${$(tss file location .):-.} || return $?
-      tags=($(tss dir all-tags $dir)) || return $?
-      _values "tag" \
-              "${tags[@]}" \
-      ;;
-  esac
-}
-
-_tss_tag_files_without() {
   _arguments -sC \
              '1: :->tag' \
              '*:file:_files'
@@ -230,31 +245,58 @@ _tss_tag_remove() {
 
   case "$state" in
     tags)
-      local dir tags
-      dir=${$(tss file location .):-.} || return $?
-      tags=($(tss dir all-tags $dir)) || return $?
-      if [[ ${#tags} -ne 0 ]]; then
-        _values -s ' ' "tag" \
-                "${tags[@]}"
+      # One or more tag patterns separated by spaces; we offer existing tags
+      local location
+      local -aU tags
+      if location=$(tss file location .); then
+        tags=($(tss location index all-tags $location))
+      else
+        # All tags in the current directory
+        for f in *(.); do
+          tags+=($(tss file tags $f))
+        done
+      fi
+      if [[ $#tags -ne 0 ]]; then
+        _values -s ' ' "tag" "${tags[@]}"
       fi
       ;;
 
     files)
-      local tag
-      tag=$line[1]
-      local files_newlines
-      if [[ -z $line[$CURRENT] ]]; then
-        files_newlines=$(tss tag files "$tag" *)
+      # We aim to offer files that have any tag matching any of the given patterns
+      local -aU patterns
+      patterns=(${(s: :)${(Q)line[1]}})
+      local filter_pattern="(${(j:|:)patterns})"
+
+      local location
+      if location=$(tss file location .); then
+        local list_command=(tss location index files $location)
+        if [[ -n $line[$CURRENT] ]]; then
+          list_command+=(--path-starts-with $line[$CURRENT])
+        fi
+        local files_newlines
+        files_newlines=$("$list_command[@]" | tss filter -t ${filter_pattern})
+        local -a files_array
+        files_array=("${(@f)files_newlines}")
+        _multi_parts / files_array
+
       else
-        if [[ $line[$CURRENT] =~ ' $' ]]; then
-          files_newlines=$(tss tag files $tag $line[$CURRENT])
+        # Don't browse recursively, just read $line[$CURRENT]'s dir
+        local dirs
+        dirs=($line[$CURRENT]*(/))
+        if [[ $#dirs -eq 0 ]]; then
+          # Offer filtered files
+          local all_regular_files
+          all_regular_files=($line[$CURRENT]*(.))
+          if [[ $#all_regular_files -ne 0 ]]; then
+            local files
+            files=($(tss tag files $filter_pattern "$all_regular_files[@]"))
+            _values "file" "${(b)files[@]}"
+          fi
         else
-          files_newlines=$(tss tag files $tag $line[$CURRENT]*)
+          # Give up on filtering
+          _files
         fi
       fi
-      local files_array
-      files_array=("${(@f)files_newlines}")
-      _multi_parts / files_array
       ;;
   esac
 }
