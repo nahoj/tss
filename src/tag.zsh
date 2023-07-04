@@ -44,6 +44,18 @@ EOF
     return 1
   fi
 
+  internal_filter
+}
+
+internal_filter() {
+  [[ ${(t)patterns} = array* ]]
+  [[ ${(t)anti_patterns} = array* ]]
+
+  if [[ $#patterns -eq 0 && $#anti_patterns -eq 0 ]]; then
+    cat
+    return 0
+  fi
+
   # Loop over stdin
   local file_path tags pattern tag
   while IFS= read -r file_path; do
@@ -105,15 +117,7 @@ EOF
   shift 1
   paths=("$@")
 
-  local filter_command=(tss_filter)
-  if [[ -n $patterns ]]; then
-    filter_command+=(-t "$patterns")
-  fi
-  if [[ -n $anti_patterns ]]; then
-    filter_command+=(-T "$anti_patterns")
-  fi
-
-  tss_file_list $paths | "$filter_command[@]"
+  tss_file_list $paths | internal_filter
 }
 
 tss_tag_in_patterns() {

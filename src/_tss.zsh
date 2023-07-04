@@ -78,17 +78,16 @@ _tss_add() {
 
       if [[ $#tags -eq 1 ]]; then
         # Aim to offer files that don't have the tag
-        local location files_newlines
-
+        local location
         if location=$(tss file location .); then
-          local list_command=(tss location index files $location)
+          local list_command=(tss location index files $location -T ${(b)tags[1]})
           if [[ -n $line[$CURRENT] ]]; then
             list_command+=(--path-starts-with $line[$CURRENT])
           fi
-          files_newlines=$("$list_command[@]" | tss filter -T ${(b)tags[1]})
-          local files_array
-          files_array=("${(@f)files_newlines}")
-          _multi_parts / files_array
+          local -a files
+          files=("${(@f)"$("$list_command[@]")"}")
+          # FIXME dirs/files with escaped characters (e.g. spaces)
+          _multi_parts / files
 
         else
           # Don't browse recursively, just read $line[$CURRENT]'s dir
@@ -165,15 +164,14 @@ _tss_remove() {
 
       local location
       if location=$(tss file location .); then
-        local list_command=(tss location index files $location)
+        local list_command=(tss location index files $location -t $filter_pattern)
         if [[ -n $line[$CURRENT] ]]; then
           list_command+=(--path-starts-with $line[$CURRENT])
         fi
-        local files_newlines
-        files_newlines=$("$list_command[@]" | tss filter -t ${filter_pattern})
-        local -a files_array
-        files_array=("${(@f)files_newlines}")
-        _multi_parts / files_array
+        local -a files
+        files=("${(@f)"$("$list_command[@]")"}")
+        # FIXME dirs/files with escaped characters (e.g. spaces)
+        _multi_parts / files
 
       else
         _files -g "$(tss util file-with-tag-pattern $filter_pattern)"

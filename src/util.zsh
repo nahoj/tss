@@ -20,6 +20,10 @@ arrayeq() {
 }
 
 tss_util_file_with_tag_pattern() {
+  if [[ $# -gt 1 ]]; then
+    print -r "Only one positional argument expected" >&2
+    return 1
+  fi
   local p
   p=$1
   if [[ $p = *[[:space:]]* ]]; then

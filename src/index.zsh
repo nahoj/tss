@@ -129,9 +129,20 @@ tss_location_index_build() {
 }
 
 tss_location_index_files() {
-  local -a opts
-  zparseopts -D -E -F -A opts - -path: -path-starts-with:
+  local -a opts tags_opts not_tags_opts
+  zparseopts -D -E -F -A opts - -path: -path-starts-with: {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
 
+  # Process options
+  local -aU patterns anti_patterns
+  local -i i
+  for ((i=2; i <= ${#tags_opts}; i+=2)); do
+    patterns+=(${(s: :)tags_opts[i]})
+  done
+  for ((i=2; i <= ${#not_tags_opts}; i+=2)); do
+    anti_patterns+=(${(s: :)not_tags_opts[i]})
+  done
+
+  # Process positional arguments
   local location
   location=$1
   require_is_location $location
@@ -151,7 +162,7 @@ tss_location_index_files() {
 
   local index
   index="$location/.ts/tsi.json"
-  jq -r "map(select($condition)) | .[].path" $index
+  jq -r "map(select($condition)) | .[].path" $index | internal_filter
 }
 
 #files_with_tags() {
