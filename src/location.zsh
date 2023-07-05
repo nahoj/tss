@@ -31,12 +31,12 @@ tss_location_of_dir_unsafe() {
   dir=$1
 
   if [[ -f "$dir/.ts/tsi.json" ]]; then
-    print -r $dir
+    print -r -- $dir
   else
     if [[ $dir == "/" ]]; then
       return 1
     else
-      tss_location_of_dir_unsafe $(dirname $dir)
+      tss_location_of_dir_unsafe ${dir:h}
     fi
   fi
 }
@@ -49,7 +49,7 @@ tss_location_of() {
   if [[ -d $pathh ]]; then
     tss_location_of_dir_unsafe $(realpath -s $pathh)
   else
-    tss_location_of_dir_unsafe $(dirname $(realpath -s $pathh))
+    tss_location_of_dir_unsafe ${$(realpath -s $pathh):h}
   fi
 }
 

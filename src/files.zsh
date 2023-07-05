@@ -38,9 +38,9 @@ EOF
 }
 
 internal_files() {
-  [[ ${(t)patterns} = array* ]]
-  [[ ${(t)anti_patterns} = array* ]]
-  [[ ${(t)paths} = array* ]]
+  require_parameter internal_files patterns 'array*'
+  require_parameter internal_files anti_patterns 'array*'
+  require_parameter internal_files paths 'array*'
 
   local pathh location
   local -r path_starts_with=''
@@ -58,5 +58,8 @@ internal_files() {
     # Not a regular file = don't print
     fi
 
-  done | internal_filter
+  done | {
+    local -ar name_only_opt=(-n)
+    internal_filter
+  }
 }

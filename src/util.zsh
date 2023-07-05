@@ -24,6 +24,21 @@ arrayeq() {
   done
 }
 
+require_parameter() {
+  if [[ $# -ne 3 ]]; then
+    print -r "Usage: require_parameter <caller_function_name> <parameter_name> <type_pattern>" >&2
+    return 1
+  fi
+
+  if [[ ! -v $2 ]]; then
+    print -r -- "$1: Parameter ${(qq)2} must be set" >&2
+    return 1
+  elif [[ ${(t)${(P)2}} != ${~3} ]]; then
+    print -r -- "$1: Parameter ${(qq)2} must have type ${(qq)3}" >&2
+    return 1
+  fi
+}
+
 # Evaluate the given arguments as a command and print the exit status
 status() {
   unsetopt err_exit err_return
@@ -135,16 +150,6 @@ require_tag_valid() {
     print -r "Invalid tag: ${(qqq)tag}" >&2
     return 1
   fi
-}
-
-# Prints the tags for the given file, or an empty string if the file has no tags
-tss_tags() {
-  local file_path
-  file_path=$1
-
-  local tags
-  tags=($(basename $file_path | sed -En "s/$file_name_maybe_tag_group_regex/\3/p"))
-  print -r "${tags[@]}"
 }
 
 tss_util_file_with_tag_pattern() {

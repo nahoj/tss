@@ -73,7 +73,7 @@ make_json_file_object() {
   uuid=$(uuidgen)
 
   local file_name json_file_name
-  file_name=$(basename $file_path)
+  file_name=${file_path:t}
   json_file_name=$(make_json_string $file_name)
 
   local -A stat
@@ -122,7 +122,7 @@ tss_location_index_build() {
     new_index="$index.NEW"
 
     print '[' >$new_index
-    print -lr **/* | {
+    print -lr -- **/* | {
       local file_path
       read -r file_path || return 0
       make_json_file_object $file_path
@@ -166,13 +166,13 @@ tss_location_index_files() {
 }
 
 internal_location_index_files() {
-  [[ ${(t)pathh} = scalar* ]]
-  [[ ${(t)path_starts_with} = scalar* ]]
+  require_parameter pathh 'scalar*'
+  require_parameter path_starts_with 'scalar*'
 
-  [[ ${(t)location} = scalar* ]]
+  require_parameter location 'scalar*'
 
-  [[ ${(t)patterns} = array* ]]
-  [[ ${(t)anti_patterns} = array* ]]
+  require_parameter patterns 'array*'
+  require_parameter anti_patterns 'array*'
 
   local condition='.isFile'
   if [[ -n $pathn ]]; then

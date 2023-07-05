@@ -1,158 +1,189 @@
 Describe 'tss test'
   alias tss='src/tss'
 
+  ExampleGroup 'Not name-only'
+    BeforeEach 'rm -rf _test && mkdir _test'
+    AfterEach 'rm -rf _test'
+
+    Example
+      When call tss test '_test/file'
+      The status should equal 2
+      The error should not equal ''
+    End
+
+    Example
+      mkdir '_test/dir[a]'
+      When call tss test -t a '_test/dir[a]'
+      The status should equal 1
+    End
+
+    Example
+      mkfifo '_test/fifo[a]'
+      When call tss test -t a '_test/fifo[a]'
+      The status should equal 1
+    End
+
+    Example
+      touch '_test/file[a]'
+      When call tss test -t a '_test/file[a]'
+      The status should equal 0
+    End
+  End
+
+  # TODO: special chars
+
   ExampleGroup 'Basics: simple tag'
     Example
-      When call tss test -t a 'file[a]'
+      When call tss test -n -t a 'file[a]'
       The status should equal 0
     End
 
     Example
-      When call tss test -T a 'file[a]'
+      When call tss test -n -T a 'file[a]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a 'file[b]'
+      When call tss test -n -t a 'file[b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -T a 'file[b]'
+      When call tss test -n -T a 'file[b]'
       The status should equal 0
     End
 
     Example
-      When call tss test -t a 'dir/file[a]'
+      When call tss test -n -t a 'dir/file[a]'
       The status should equal 0
     End
 
     Example
-      When call tss test -T a 'dir/file[a]'
+      When call tss test -n -T a 'dir/file[a]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a 'dir/file[b]'
+      When call tss test -n -t a 'dir/file[b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -T a 'dir/file[b]'
+      When call tss test -n -T a 'dir/file[b]'
       The status should equal 0
     End
   End
 
   ExampleGroup 'Basics: pattern'
     Example
-      When call tss test -t '*a*' 'file[aa]'
+      When call tss test -n -t '*a*' 'file[aa]'
       The status should equal 0
     End
 
     Example
-      When call tss test -T '*a*' 'file[aa]'
+      When call tss test -n -T '*a*' 'file[aa]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t '*a*' 'file[b]'
+      When call tss test -n -t '*a*' 'file[b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -T '*a*' 'file[b]'
+      When call tss test -n -T '*a*' 'file[b]'
       The status should equal 0
     End
 
     Example
-      When call tss test -t '*a*' 'dir/file[aa]'
+      When call tss test -n -t '*a*' 'dir/file[aa]'
       The status should equal 0
     End
 
     Example
-      When call tss test -T '*a*' 'dir/file[aa]'
+      When call tss test -n -T '*a*' 'dir/file[aa]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t '*a*' 'dir/file[b]'
+      When call tss test -n -t '*a*' 'dir/file[b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -T '*a*' 'dir/file[b]'
+      When call tss test -n -T '*a*' 'dir/file[b]'
       The status should equal 0
     End
   End
 
   ExampleGroup 'File name structure'
     Example
-      When call tss test -t a 'file'
+      When call tss test -n -t a 'file'
       The status should equal 1
     End
 
     Example
-      When call tss test -T a 'file'
+      When call tss test -n -T a 'file'
       The status should equal 0
     End
 
     Example
-      When call tss test -t a 'file[]'
+      When call tss test -n -t a 'file[]'
       The status should equal 1
     End
 
     Example
-      When call tss test -T a 'file[]'
+      When call tss test -n -T a 'file[]'
       The status should equal 0
     End
 
     Example
-      When call tss test -t a 'file[a].ext'
+      When call tss test -n -t a 'file[a].ext'
       The status should equal 0
     End
 
     Example
-      When call tss test -T a 'file[a].ext'
+      When call tss test -n -T a 'file[a].ext'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a '[a]file'
+      When call tss test -n -t a '[a]file'
       The status should equal 0
     End
 
     Example
-      When call tss test -T a '[a]file'
+      When call tss test -n -T a '[a]file'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a 'file.ext[a]'
+      When call tss test -n -t a 'file.ext[a]'
       The status should equal 0
     End
 
     Example
-      When call tss test -T a 'file.ext[a]'
+      When call tss test -n -T a 'file.ext[a]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a 'file[a'
+      When call tss test -n -t a 'file[a'
       The status should equal 1
     End
 
     Example
-      When call tss test -T a 'file[a'
+      When call tss test -n -T a 'file[a'
       The status should equal 0
     End
 
     Example
-      When call tss test -t a 'file a]'
+      When call tss test -n -t a 'file a]'
       The status should equal 1
     End
 
     Example
-      When call tss test -T a 'file a]'
+      When call tss test -n -T a 'file a]'
       The status should equal 0
     End
 
@@ -160,158 +191,158 @@ Describe 'tss test'
 
   ExampleGroup 'The 4 tag positions'
     Example
-      When call tss test -t a 'file[a]'
+      When call tss test -n -t a 'file[a]'
       The status should equal 0
     End
 
     Example
-      When call tss test -T a 'file[a]'
+      When call tss test -n -T a 'file[a]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a 'file[a b]'
+      When call tss test -n -t a 'file[a b]'
       The status should equal 0
     End
 
     Example
-      When call tss test -T a 'file[a b]'
+      When call tss test -n -T a 'file[a b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a 'file[b a]'
+      When call tss test -n -t a 'file[b a]'
       The status should equal 0
     End
 
     Example
-      When call tss test -T a 'file[b a]'
+      When call tss test -n -T a 'file[b a]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a 'file[b a c]'
+      When call tss test -n -t a 'file[b a c]'
       The status should equal 0
     End
 
     Example
-      When call tss test -T a 'file[b a c]'
+      When call tss test -n -T a 'file[b a c]'
       The status should equal 1
     End
   End
 
   ExampleGroup 'Multiple tags: one opt'
     Example
-      When call tss test -t 'a b' 'file[a b]'
+      When call tss test -n -t 'a b' 'file[a b]'
       The status should equal 0
     End
 
     Example
-      When call tss test -T 'a b' 'file[a b]'
+      When call tss test -n -T 'a b' 'file[a b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t 'a b' 'file[a]'
+      When call tss test -n -t 'a b' 'file[a]'
       The status should equal 1
     End
 
     Example
-      When call tss test -T 'a b' 'file[a]'
+      When call tss test -n -T 'a b' 'file[a]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t 'a b' 'file[b]'
+      When call tss test -n -t 'a b' 'file[b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -T 'a b' 'file[b]'
+      When call tss test -n -T 'a b' 'file[b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t 'a b' 'file'
+      When call tss test -n -t 'a b' 'file'
       The status should equal 1
     End
 
     Example
-      When call tss test -T 'a b' 'file'
+      When call tss test -n -T 'a b' 'file'
       The status should equal 0
     End
   End
 
   ExampleGroup 'Multiple tags: two opts'
     Example
-      When call tss test -t a -t b 'file[a b]'
+      When call tss test -n -t a -t b 'file[a b]'
       The status should equal 0
     End
 
     Example
-      When call tss test -T a -T b 'file[a b]'
+      When call tss test -n -T a -T b 'file[a b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a -t b 'file[a]'
+      When call tss test -n -t a -t b 'file[a]'
       The status should equal 1
     End
 
     Example
-      When call tss test -T a -T b 'file[a]'
+      When call tss test -n -T a -T b 'file[a]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a -t b 'file[b]'
+      When call tss test -n -t a -t b 'file[b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -T a -T b 'file[b]'
+      When call tss test -n -T a -T b 'file[b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a -t b 'file'
+      When call tss test -n -t a -t b 'file'
       The status should equal 1
     End
 
     Example
-      When call tss test -T a -T b 'file'
+      When call tss test -n -T a -T b 'file'
       The status should equal 0
     End
   End
 
   ExampleGroup 'Multiple tags: mixing -t and -T'
     Example
-      When call tss test -t a -T b 'file[a b]'
+      When call tss test -n -t a -T b 'file[a b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a -T b 'file[a]'
+      When call tss test -n -t a -T b 'file[a]'
       The status should equal 0
     End
 
     Example
-      When call tss test -t a -T b 'file[b]'
+      When call tss test -n -t a -T b 'file[b]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a -T b 'file'
+      When call tss test -n -t a -T b 'file'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a -T a 'file[a]'
+      When call tss test -n -t a -T a 'file[a]'
       The status should equal 1
     End
 
     Example
-      When call tss test -t a -T a 'file'
+      When call tss test -n -t a -T a 'file'
       The status should equal 1
     End
   End

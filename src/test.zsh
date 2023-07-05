@@ -1,6 +1,6 @@
 tss_test() {
-  local help tags_opts not_tags_opts
-  zparseopts -D -E -F - -help=help {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
+  local help name_only_opt tags_opts not_tags_opts
+  zparseopts -D -E -F - -help=help {n,-name-only}=name_only_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
 
   if [[ -n $help ]]; then
     cat <<EOF >&2
@@ -10,6 +10,7 @@ Usage: tss test [options] <file>
 Return 0 if true, 1 if false, 2 if an error occurred.
 
 Options:
+  -n, --name-only             Test only the file's name, don't check whether the file exists and is a taggable file
   -t, --tags <pattern...>     True only if the file has tags matching all the given patterns
   -T, --not-tags <pattern...> True only if the file doesn't have any tag matching any of the given patterns
   --help                      Show this help message
@@ -40,12 +41,13 @@ EOF
 }
 
 internal_test() {
-  [[ ${(t)patterns} = array* ]] || return 2
-  [[ ${(t)anti_patterns} = array* ]] || return 2
-  [[ ${(t)file_path} = scalar* ]] || return 2
+  require_parameter internal_test name_only_opt 'array*' || return 2
+  require_parameter internal_test patterns 'array*' || return 2
+  require_parameter internal_test anti_patterns 'array*' || return 2
+  require_parameter internal_test file_path 'scalar*' || return 2
 
   local tags pattern tag
-  tags=($(tss_tags $file_path)) || return 2
+  tags=($(internal_tags)) || return 2
 
   for pattern in "${patterns[@]}"; do
     for tag in "${tags[@]}"; do

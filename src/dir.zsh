@@ -19,7 +19,7 @@ tss_dir_all_tags() {
     tags+=($(tss_tags "$file_path"))
   done
   # print sorted tags
-  print -l ${(in)tags}
+  print -l -- ${(in)tags}
 }
 
 tss_dir() {

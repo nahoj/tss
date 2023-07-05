@@ -4,7 +4,7 @@ tss_clean_one_file() {
   local file_path file_name
   file_path=$1
   require_exists_taggable $file_path
-  file_name=$(basename $file_path)
+  file_name=${file_path:t}
   if ! [[ $file_name =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
     print -r "Ignoring file with ill-formed name: ${(qqq)file_path}" >&2
     return 1
@@ -14,7 +14,7 @@ tss_clean_one_file() {
   new_file_name="$match[1]$match[4]"
   if [[ $new_file_name != $file_name ]]; then
     local new_file_path
-    new_file_path="$(dirname $file_path)/$new_file_name"
+    new_file_path="${file_path:h}/$new_file_name"
     require_does_not_exist $new_file_path
     mv $file_path $new_file_path
   fi
@@ -44,7 +44,7 @@ tss_set_tags() {
 
   else
     local file_name
-    file_name=$(basename $file_path)
+    file_name=${file_path:t}
 
     if ! [[ "$file_name" =~ $file_name_maybe_tag_group_regex ]]; then
       print -r "Invalid file name: ${(qqq)file_path}" >&2
@@ -67,7 +67,7 @@ tss_set_tags() {
 
     if [[ $new_file_name != $file_name ]]; then
       local new_file_path
-      new_file_path="$(dirname $file_path)/$new_file_name"
+      new_file_path="${file_path:h}/$new_file_name"
       require_does_not_exist $new_file_path
       mv $file_path $new_file_path
     fi
@@ -93,9 +93,9 @@ tag_in_patterns() {
 }
 
 internal_add_remove() {
-  [[ ${(t)add_tags} = 'array-local' ]]
-  [[ ${(t)remove_patterns} = 'array-local' ]]
-  [[ ${(t)file_paths} = 'array-local' ]]
+  require_parameter internal_add_remove add_tags 'array*'
+  require_parameter internal_add_remove remove_patterns 'array*'
+  require_parameter internal_add_remove file_paths 'array*'
 
   local file_path old_tags new_tags tag
   for file_path in "${file_paths[@]}"; do

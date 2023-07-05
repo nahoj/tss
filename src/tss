@@ -19,6 +19,7 @@ dir=${0:A:h}
 . "$dir/edit.zsh"
 . "$dir/index.zsh"
 . "$dir/location.zsh"
+. "$dir/tags.zsh"
 . "$dir/test.zsh"
 . "$dir/util.zsh"
 

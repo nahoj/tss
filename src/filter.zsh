@@ -1,6 +1,6 @@
 tss_filter() {
-  local help tags_opts not_tags_opts
-  zparseopts -D -E -F - -help=help {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
+  local -a help name_only_opt tags_opts not_tags_opts
+  zparseopts -D -E -F - -help=help {n,-name-only}=name_only_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
 
   if [[ -n $help ]]; then
     cat <<EOF >&2
@@ -8,6 +8,7 @@ tss_filter() {
 Usage: tss filter [options]
 
 Options:
+  -n, --name-only             Filter files based on their name, don't check whether they exist and are taggable files
   -t, --tags <pattern...>     Only output files that have tags matching all the given patterns
   -T, --not-tags <pattern...> Don't output files that have any tag matching any of the given patterns
   --help                      Show this help message
@@ -36,8 +37,8 @@ EOF
 }
 
 internal_filter() {
-  [[ ${(t)patterns} = array* ]]
-  [[ ${(t)anti_patterns} = array* ]]
+  require_parameter internal_filter patterns 'array*'
+  require_parameter internal_filter anti_patterns 'array*'
 
   if [[ $#patterns -eq 0 && $#anti_patterns -eq 0 ]]; then
     cat
@@ -48,7 +49,7 @@ internal_filter() {
   local file_path
   while IFS= read -r file_path; do
     if internal_test; then
-      print -r $file_path
+      print -r -- $file_path
     fi
   done
 }
