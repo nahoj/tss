@@ -26,6 +26,9 @@ tss() {
     tag)
       tss_tag "$@"
       ;;
+    test)
+      tss_test "$@"
+      ;;
     util)
       tss_util "$@"
       ;;

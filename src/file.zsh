@@ -52,41 +52,6 @@ require_well_formed() {
   fi
 }
 
-tss_file_has() {
-  local file_path tag_patterns
-  file_path=$1
-  require_exists_taggable $file_path
-  tag_patterns=(${(s: :)2})
-  if [[ ${#tag_patterns} -eq 0 ]]; then
-    print -r "No tag patterns given" >&2
-    return 1
-  fi
-
-  local tags
-  tags=($(tss_file_tags $file_path))
-
-  if [[ ${#tags} -eq 0 ]]; then
-    return 1
-
-  else
-    local pattern tag
-    local -i found
-    for pattern in "${tag_patterns[@]}"; do
-      found=1
-      for tag in "${tags[@]}"; do
-        if [[ $tag = ${~pattern} ]]; then
-          found=0
-          break
-        fi
-      done
-      if [[ $found -ne 0 ]]; then
-        return 1
-      fi
-    done
-    return 0
-  fi
-}
-
 # List taggable files in the given paths
 tss_file_list() {
   local paths
@@ -115,7 +80,6 @@ tss_file_list() {
 tss_file_tags() {
   local file_path
   file_path=$1
-  require_exists_taggable $file_path
 
   local tags
   tags=($(basename $file_path | sed -En "s/$file_name_maybe_tag_group_regex/\3/p"))
@@ -127,9 +91,6 @@ tss_file() {
   subcommand=$1
   shift
   case $subcommand in
-    has)
-      tss_file_has "$@"
-      ;;
     list)
       tss_file_list "$@"
       ;;

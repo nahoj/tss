@@ -175,13 +175,6 @@ _tss_remove() {
 }
 
 
-# tss file has takes 2 positional arguments: a tag and a single file
-_tss_file_has() {
-  _arguments -s \
-             '1:file:_files' \
-             '2: :->tag'
-}
-
 _tss_file_location() {
   _arguments -s \
              '1:file:_files'
@@ -201,15 +194,11 @@ _tss_file() {
   case "$state" in
     cmds)
       _values "tss-file command" \
-              "has[Test whether a file has a given tag.]" \
               "tags[List the tags for a given file.]" \
               "location[Prints the TagSpaces location of the given file, or an empty string]" \
       ;;
     args)
       case $line[1] in
-        has)
-          _tss_file_has
-          ;;
         tags)
           _tss_file_tags
           ;;
@@ -323,6 +312,11 @@ _tss_tag() {
   esac
 }
 
+_tss_test() {
+  _arguments -s \
+             '1:file:_files'
+}
+
 _tss_util() {
   local line state
 
@@ -359,6 +353,7 @@ _tss() {
               "location[TODO descr]" \
               "remove[Remove tags from one or more files.]" \
               "tag[blah]" \
+              "test[blah]" \
               "util[blah]" \
       ;;
     args)
@@ -383,6 +378,9 @@ _tss() {
           ;;
         tag)
           _tss_tag
+          ;;
+        test)
+          _tss_test
           ;;
         util)
           _tss_util

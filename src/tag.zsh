@@ -57,34 +57,86 @@ internal_filter() {
   fi
 
   # Loop over stdin
-  local file_path tags pattern tag
+  local file_path
   while IFS= read -r file_path; do
-    tags=($(tss_file_tags $file_path))
-
-    for pattern in "${patterns[@]}"; do
-      for tag in "${tags[@]}"; do
-        if [[ $tag = ${~pattern} ]]; then
-          # pattern OK
-          continue 2
-        fi
-      done
-      # file KO
-      continue 2
-    done
-
-    for pattern in "${anti_patterns[@]}"; do
-      for tag in "${tags[@]}"; do
-        if [[ $tag = ${~pattern} ]]; then
-          # file KO
-          continue 3
-        fi
-      done
-      # pattern OK
-    done
-    # file OK
-
-    print -r $file_path
+#    echo $file_path >&2
+    if internal_test; then
+      print -r $file_path
+    fi
   done
+}
+
+tss_test() {
+  local help tags_opts not_tags_opts
+  zparseopts -D -E -F - -help=help {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
+
+  if [[ -n $help ]]; then
+    cat <<EOF >&2
+
+Usage: tss test [options] <file>
+
+Return 0 if true, 1 if false, 2 if an error occurred.
+
+Options:
+  -t, --tags <pattern...>     True only if the file has tags matching all the given patterns
+  -T, --not-tags <pattern...> True only if the file doesn't have any tag matching any of the given patterns
+  --help                      Show this help message
+
+EOF
+    return 0
+  fi
+
+  # Process options
+  local -aU patterns anti_patterns
+  local -i i
+  for ((i=2; i <= ${#tags_opts}; i+=2)); do
+    patterns+=(${(s: :)tags_opts[i]})
+  done
+  for ((i=2; i <= ${#not_tags_opts}; i+=2)); do
+    anti_patterns+=(${(s: :)not_tags_opts[i]})
+  done
+
+  # Process positional arguments
+  if [[ $# -ne 1 ]]; then
+    print -r "Expected exactly one positional argument, got $# instead" >&2
+    return 2
+  fi
+  local file_path
+  file_path=$1
+
+  internal_test
+}
+
+
+internal_test() {
+  [[ ${(t)patterns} = array* ]] || return 2
+  [[ ${(t)anti_patterns} = array* ]] || return 2
+  [[ ${(t)file_path} = scalar* ]] || return 2
+
+  local tags pattern tag
+  tags=($(tss_file_tags $file_path)) || return 2
+
+  for pattern in "${patterns[@]}"; do
+    for tag in "${tags[@]}"; do
+      if [[ $tag = ${~pattern} ]]; then
+        # pattern OK
+        continue 2
+      fi
+    done
+    # file KO
+    return 1
+  done
+
+  for pattern in "${anti_patterns[@]}"; do
+    for tag in "${tags[@]}"; do
+      if [[ $tag = ${~pattern} ]]; then
+        # file KO
+        return 1
+      fi
+    done
+    # pattern OK
+  done
+  # file OK
 }
 
 tss_tag_files() {

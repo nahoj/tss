@@ -67,74 +67,7 @@ tag3"
   End
 
   Describe 'file'
-    Describe 'has'
-      It 'rejects a nonexistent file'
-        When call tss file has _test/file tag
-        The status should equal 1
-        The stderr should not equal ""
-      End
-
-      It 'rejects a directory'
-        local dir="_test/dir"
-        mkdir "$dir"
-        When call tss file has _test/dir tag
-        The status should equal 1
-        The stderr should not equal ""
-        The path "$dir" should be directory
-      End
-
-      It 'returns 0 if a file has all the given tags'
-       local file="_test/file[tag1 tag2].ext"
-        touch "$file"
-        When call tss file has "$file" 'tag1 tag2'
-        The status should equal 0
-      End
-
-      It 'returns 1 if a file is missing any of the given tags'
-        local file="_test/file[tag1 tag2].ext"
-        touch "$file"
-        When call tss file has "$file" 'tag1 tag2 tag3'
-        The status should equal 1
-      End
-
-      It 'returns 0 if a file has all the given tags and more'
-        local file="_test/file[tag1 tag2 tag3].ext"
-        touch "$file"
-        When call tss file has "$file" 'tag1 tag2'
-        The status should equal 0
-      End
-
-      It 'returns 0 if a file has tags matching all the given glob patterns'
-        local file="_test/file[tag11 tag22].ext"
-        touch "$file"
-        When call tss file has "$file" 'tag1* tag2*'
-        The status should equal 0
-      End
-
-      It "returns 1 if one pattern isn't matched by any of the file's tags"
-        local file="_test/file[tag11 tag22].ext"
-        touch "$file"
-        When call tss file has "$file" 'tag1* tag2* tag3*'
-        The status should equal 1
-      End
-    End
-
     Describe 'tags'
-      It 'rejects a nonexistent file'
-        When call tss file tags _test/file
-        The status should equal 1
-        The stderr should not equal ""
-      End
-
-      It 'rejects a directory'
-        local dir="_test/dir"
-        mkdir "$dir"
-        When call tss file tags "$dir"
-        The status should equal 1
-        The stderr should not equal ""
-        The path "$dir" should be directory
-      End
-
       It 'lists tags for a file with tags'
         local file="_test/file[tag1 tag2].ext"
         touch "$file"

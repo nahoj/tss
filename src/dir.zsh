@@ -15,7 +15,7 @@ tss_dir_all_tags() {
 
   local file_path
   local -aU tags # array of unique tags
-  for file_path in "$dir_path"/**/*(^/); do
+  for file_path in "$dir_path"/**/*(.); do
     tags+=($(tss_file_tags "$file_path"))
   done
   # print sorted tags
