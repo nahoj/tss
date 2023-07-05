@@ -69,6 +69,7 @@ with_lock_file() {
     return 1
   fi
 
+  # FIXME doesn't remove $lock_file in case of ^C
   touch $lock_file
   {
     $@

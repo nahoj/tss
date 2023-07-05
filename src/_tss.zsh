@@ -80,23 +80,20 @@ _tss_add() {
         # Aim to offer files that don't have the tag
         local location
         if location=$(tss file location .); then
-          local list_command=(tss location index files $location -T ${(b)tags[1]})
-          if [[ -n $line[$CURRENT] ]]; then
-            list_command+=(--path-starts-with $line[$CURRENT])
-          fi
           local -a files
-          files=("${(@f)"$("$list_command[@]")"}")
-          # FIXME dirs/files with escaped characters (e.g. spaces)
+          files=("${(@f)"$( \
+            tss location index files $location --path-starts-with "${(Q)line[$CURRENT]}" -T ${(b)tags[1]} \
+            )"}")
           _multi_parts / files
 
         else
           # Don't browse recursively, just read $line[$CURRENT]'s dir
           local dirs
-          dirs=($line[$CURRENT]*(/))
+          dirs=(${(Q)line[$CURRENT]}*(/))
           if [[ $#dirs -eq 0 ]]; then
             # Offer filtered files
             local all_regular_files
-            all_regular_files=($line[$CURRENT]*(.))
+            all_regular_files=(${(Q)line[$CURRENT]}*(.))
             if [[ $#all_regular_files -ne 0 ]]; then
               local files
               files=($(tss tag files '' -T ${(b)tags[1]} "$all_regular_files[@]"))
@@ -164,13 +161,10 @@ _tss_remove() {
 
       local location
       if location=$(tss file location .); then
-        local list_command=(tss location index files $location -t $filter_pattern)
-        if [[ -n $line[$CURRENT] ]]; then
-          list_command+=(--path-starts-with $line[$CURRENT])
-        fi
         local -a files
-        files=("${(@f)"$("$list_command[@]")"}")
-        # FIXME dirs/files with escaped characters (e.g. spaces)
+        files=("${(@f)"$( \
+          tss location index files $location --path-starts-with "${(Q)line[$CURRENT]}" -t $filter_pattern \
+          )"}")
         _multi_parts / files
 
       else

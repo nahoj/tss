@@ -69,6 +69,9 @@ make_json_file_object() {
   local file_path
   file_path=$1
 
+  local uuid
+  uuid=$(uuidgen)
+
   local file_name json_file_name
   file_name=$(basename $file_path)
   json_file_name=$(make_json_string $file_name)
@@ -94,7 +97,7 @@ make_json_file_object() {
   json_path=$(make_json_string $file_path)
 
   print -r '  {'
-  print -r '    "uuid": "'$(uuidgen)'",'
+  print -r '    "uuid": "'$uuid'",'
   print -r '    "name": '$json_file_name','
   print -r '    "isFile": '$is_regular_file','
   print -r '    "extension": '$extension','
@@ -112,20 +115,27 @@ tss_location_index_build() {
 
   do_build_index() {
     print -r "Building index $location/.ts/tsi.json"
-    local file_path
-    print '[' >.ts/tsi.json
-    # Exclude hidden files
-    find * -regextype posix-extended -not -regex '.*/\.([^./]|\.[^/]).*' | {
+
+    # Note: We are in $location
+    local index new_index
+    index=".ts/tsi.json"
+    new_index="$index.NEW"
+
+    print '[' >$new_index
+    print -lr **/* | {
+      local file_path
       read -r file_path || return 0
       make_json_file_object $file_path
       while read -r file_path; do
         print ','
         make_json_file_object $file_path
       done
-    } >>.ts/tsi.json
-    print ']' >>.ts/tsi.json
+    } >>$new_index
+    print ']' >>$new_index
+
+    mv $new_index $index
   }
-  with_lock_file "$location/.ts/tsi.json" with_cd "$location" do_build_index
+  with_lock_file "$location/.ts/tsi.json" with_cd $location do_build_index
 }
 
 tss_location_index_files() {
@@ -156,7 +166,7 @@ tss_location_index_files() {
       condition+=' and .path == '$(make_json_string $opts[--path])
     fi
   fi
-  if [[ -v 'opts[--path-starts-with]' ]]; then
+  if [[ -n ${opts[--path-starts-with]:-} ]]; then
     condition+=' and (.path | startswith('$(make_json_string $opts[--path-starts-with])'))'
   fi
 
@@ -164,26 +174,6 @@ tss_location_index_files() {
   index="$location/.ts/tsi.json"
   jq -r "map(select($condition)) | .[].path" $index | internal_filter
 }
-
-#files_with_tags() {
-#  local location
-#  location=${1:-.}
-#  require_is_location "$location"
-#
-#  local -aU tags
-#  tags=("$@")
-#  local tag
-#  for tag in "$tags[@]"; do
-#    [[ $tag =~ $tag_regex ]] || {
-#      print "Invalid tag: $tag" >&2
-#      return 1
-#    }
-#  done
-#
-#  local index
-#  index="$location/.ts/tsi.json"
-#  jq -r --argjson tags "$tags" 'map(select(.tags | any(.title; . as $t | $tags | any($t == .)))) | .[].path' $index
-#}
 
 tss_location_index() {
   local subcommand
