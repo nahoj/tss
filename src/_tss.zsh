@@ -175,40 +175,45 @@ _tss_remove() {
 }
 
 
+###################
+# Query subcommands
+###################
+
+_tss_files() {
+  _arguments -sC \
+             '1: :->tag' \
+             '*:file:_files'
+
+  case "$state" in
+    tag)
+      local dir tags
+      dir=${$(tss file location .):-.} || return $?
+      tags=($(tss dir all-tags $dir)) || return $?
+      _values "tag" \
+              "${tags[@]}" \
+      ;;
+  esac
+}
+
 _tss_file_location() {
   _arguments -s \
              '1:file:_files'
 }
 
-_tss_file_tags() {
+_tss_tags() {
   _arguments -s \
              '1:file:_files'
 }
 
-_tss_file() {
-  local line state
-
-  _arguments -sC \
-             "1: :->cmds" \
-             "*::arg:->args"
-  case "$state" in
-    cmds)
-      _values "tss-file command" \
-              "tags[List the tags for a given file.]" \
-              "location[Prints the TagSpaces location of the given file, or an empty string]" \
-      ;;
-    args)
-      case $line[1] in
-        tags)
-          _tss_file_tags
-          ;;
-        location)
-          _tss_file_location
-          ;;
-      esac
-      ;;
-  esac
+_tss_test() {
+  _arguments -s \
+             '1:file:_files'
 }
+
+
+####################
+# Location and index
+####################
 
 _tss_location_index_all_tags() {
   _arguments -s \
@@ -275,48 +280,6 @@ _tss_location() {
   esac
 }
 
-_tss_tag_files() {
-  _arguments -sC \
-             '1: :->tag' \
-             '*:file:_files'
-
-  case "$state" in
-    tag)
-      local dir tags
-      dir=${$(tss file location .):-.} || return $?
-      tags=($(tss dir all-tags $dir)) || return $?
-      _values "tag" \
-              "${tags[@]}" \
-      ;;
-  esac
-}
-
-_tss_tag() {
-  local line state
-
-  _arguments -sC \
-             "1: :->cmds" \
-             "*::arg:->args"
-  case "$state" in
-    cmds)
-      _values "tss-tag command" \
-              "files[List files with a given tag under the given paths.]" \
-      ;;
-    args)
-      case $line[1] in
-        files)
-          _tss_tag_files
-          ;;
-      esac
-      ;;
-  esac
-}
-
-_tss_test() {
-  _arguments -s \
-             '1:file:_files'
-}
-
 _tss_util() {
   local line state
 
@@ -349,10 +312,11 @@ _tss() {
               "add[Add tags to one or more files.]" \
               "clean[Remove the whole tag group from one or more files.]" \
               "dir[TODO descr]" \
-              "file[TODO descr]" \
+              "files[TODO descr]" \
+              "filter[TODO descr]" \
               "location[TODO descr]" \
               "remove[Remove tags from one or more files.]" \
-              "tag[blah]" \
+              "tags[blah]" \
               "test[blah]" \
               "util[blah]" \
       ;;
@@ -367,8 +331,11 @@ _tss() {
         dir)
           _tss_dir
           ;;
-        file)
-          _tss_file
+        files)
+          _tss_files
+          ;;
+        filter)
+          _tss_filter
           ;;
         location)
           _tss_location
@@ -376,8 +343,8 @@ _tss() {
         remove)
           _tss_remove
           ;;
-        tag)
-          _tss_tag
+        tags)
+          _tss_tags
           ;;
         test)
           _tss_test

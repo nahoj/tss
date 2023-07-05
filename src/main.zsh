@@ -11,8 +11,8 @@ tss() {
     dir)
       tss_dir "$@"
       ;;
-    file)
-      tss_file "$@"
+    files)
+      tss_files "$@"
       ;;
     filter)
       tss_filter "$@"
@@ -23,8 +23,8 @@ tss() {
     remove)
       tss_remove "$@"
       ;;
-    tag)
-      tss_tag "$@"
+    tags)
+      tss_tags "$@"
       ;;
     test)
       tss_test "$@"

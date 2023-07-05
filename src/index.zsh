@@ -88,7 +88,7 @@ make_json_file_object() {
   local json_tag_array='[]'
   if [[ $is_regular_file == 'true' ]]; then
     local file_tags tag_objects tag
-    file_tags=($(tss_file_tags $file_path))
+    file_tags=($(tss_tags $file_path))
     tag_objects=("${(@f)$(for tag in "$file_tags[@]"; do make_json_tag_object $tag; done)}")
     json_tag_array="[${(j:, :)tag_objects[@]}]"
   fi
@@ -139,10 +139,15 @@ tss_location_index_build() {
 }
 
 tss_location_index_files() {
-  local -a opts tags_opts not_tags_opts
+  local -a tags_opts not_tags_opts
+  local -A opts
   zparseopts -D -E -F -A opts - -path: -path-starts-with: {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
 
   # Process options
+  local pathh path_starts_with
+  pathh=${opts[--path]:-}
+  path_starts_with=${opts[--path-starts-with]:-}
+
   local -aU patterns anti_patterns
   local -i i
   for ((i=2; i <= ${#tags_opts}; i+=2)); do
@@ -157,17 +162,29 @@ tss_location_index_files() {
   location=$1
   require_is_location $location
 
+  internal_location_index_files
+}
+
+internal_location_index_files() {
+  [[ ${(t)pathh} = scalar* ]]
+  [[ ${(t)path_starts_with} = scalar* ]]
+
+  [[ ${(t)location} = scalar* ]]
+
+  [[ ${(t)patterns} = array* ]]
+  [[ ${(t)anti_patterns} = array* ]]
+
   local condition='.isFile'
-  if [[ -v 'opts[--path]' ]]; then
-    require_exists $opts[--path]
-    if [[ -d $opts[--path] ]]; then
-      condition+=' and (.path | startswith('$(make_json_string "$opts[--path]/")'))'
+  if [[ -n $pathn ]]; then
+    require_exists $pathh
+    if [[ -d $pathh ]]; then
+      condition+=' and (.path | startswith('$(make_json_string "$pathh/")'))'
     else
-      condition+=' and .path == '$(make_json_string $opts[--path])
+      condition+=' and .path == '$(make_json_string $pathh)
     fi
   fi
-  if [[ -n ${opts[--path-starts-with]:-} ]]; then
-    condition+=' and (.path | startswith('$(make_json_string $opts[--path-starts-with])'))'
+  if [[ -n $path_starts_with ]]; then
+    condition+=' and (.path | startswith('$(make_json_string $path_starts_with)'))'
   fi
 
   local index

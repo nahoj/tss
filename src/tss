@@ -14,11 +14,12 @@ zmodload -F zsh/stat b:zstat
 dir=${0:A:h}
 
 . "$dir/dir.zsh"
+. "$dir/files.zsh"
+. "$dir/filter.zsh"
 . "$dir/edit.zsh"
-. "$dir/file.zsh"
 . "$dir/index.zsh"
 . "$dir/location.zsh"
-. "$dir/tag.zsh"
+. "$dir/test.zsh"
 . "$dir/util.zsh"
 
 . "$dir/main.zsh"

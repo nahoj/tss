@@ -4,7 +4,7 @@ BIN_DIR=$(PREFIX)/bin
 INSTALL_DIR=$(PREFIX)/share/tagspaces-cli
 ZSH_FUNCTIONS_DIR=$(PREFIX)/share/zsh/site-functions
 
-MODULES=dir edit file main tag util
+MODULES=dir edit files filter index location main test util
 
 all:
 	@echo "make test"

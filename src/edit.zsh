@@ -74,6 +74,24 @@ tss_set_tags() {
   fi
 }
 
+tag_in_patterns() {
+  local tag tag_patterns
+  tag=$1
+  tag_patterns=(${(s: :)2})
+  if [[ ${#tag_patterns} -eq 0 ]]; then
+    print -r "No tag patterns given" >&2
+    return 1
+  fi
+
+  local pattern
+  for pattern in "${tag_patterns[@]}"; do
+    if [[ $tag = ${~pattern} ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 internal_add_remove() {
   [[ ${(t)add_tags} = 'array-local' ]]
   [[ ${(t)remove_patterns} = 'array-local' ]]
@@ -84,11 +102,11 @@ internal_add_remove() {
     require_well_formed $file_path
     require_exists_taggable $file_path
 
-    old_tags=($(tss_file_tags $file_path))
+    old_tags=($(tss_tags $file_path))
     if [[ $#remove_patterns -gt 0 ]]; then
       new_tags=()
       for tag in "${old_tags[@]}"; do
-        if ! tss_tag_in_patterns $tag "$remove_patterns"; then
+        if ! tag_in_patterns $tag "$remove_patterns"; then
           new_tags+=($tag)
         fi
       done

@@ -1,3 +1,8 @@
+
+###############
+# General utils
+###############
+
 # From https://stackoverflow.com/a/76516890
 # Takes the names of two array variables
 arrayeq() {
@@ -17,21 +22,6 @@ arrayeq() {
         return 1
     fi
   done
-}
-
-tss_util_file_with_tag_pattern() {
-  if [[ $# -gt 1 ]]; then
-    print -r "Only one positional argument expected" >&2
-    return 1
-  fi
-  local p
-  p=$1
-  if [[ $p = *[[:space:]]* ]]; then
-    print -r "Invalid pattern (contains whitespace); please provide a pattern for a single tag." >&2
-    return 1
-  fi
-
-  print -r "*[[](($p)|($p)[:space:]*|*[:space:]($p)|*[:space:]($p)[:space:]*)[]]*(.)"
 }
 
 # Evaluate the given arguments as a command and print the exit status
@@ -76,6 +66,100 @@ with_lock_file() {
   } always {
     rm -f $lock_file
   }
+}
+
+
+###################
+# Tag-related utils
+###################
+
+# Regex groups are:
+# - before tag group
+# - tag group (brackets included)
+# - tag group (brackets excluded)
+# - after tag group
+file_name_maybe_tag_group_regex='^([^[]*)(\[([^]]*)\])?(.*)$'
+
+well_formed_file_name_maybe_tag_group_regex='^([^][]*)(\[([^][]*)\])?([^][]*)$'
+
+require_does_not_exist() {
+  local file_path
+  file_path=$1
+
+  if [[ -e $file_path ]]; then
+    print -r  "File already exists: ${(qqq)file_path}" >&2
+    return 1
+  fi
+}
+
+require_exists() {
+  local pathh
+  pathh=$1
+
+  if [[ ! -e $pathh ]]; then
+    print -r "No such file or directory: ${(qqq)pathh}" >&2
+    return 1
+  fi
+}
+
+require_exists_taggable() {
+  local file_path
+  file_path=$1
+
+  require_exists $file_path
+
+  if [[ ! -f $file_path ]]; then
+    print -r  "Not a regular file: ${(qqq)file_path}" >&2
+    return 1
+  fi
+}
+
+require_well_formed() {
+  unsetopt warn_create_global warn_nested_var
+
+  local file_path
+  file_path=$1
+
+  if [[ ! $file_path =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
+    print -r "Ill-formed file name: ${(qqq)file_path}" >&2
+    return 1
+  fi
+}
+
+require_tag_valid() {
+  local tag
+  tag=$1
+
+  # if $tag contains ] or [ or etc.
+  if [[ "$tag" =~ '[][/[:cntrl:][:space:]]' ]]; then
+    print -r "Invalid tag: ${(qqq)tag}" >&2
+    return 1
+  fi
+}
+
+# Prints the tags for the given file, or an empty string if the file has no tags
+tss_tags() {
+  local file_path
+  file_path=$1
+
+  local tags
+  tags=($(basename $file_path | sed -En "s/$file_name_maybe_tag_group_regex/\3/p"))
+  print -r "${tags[@]}"
+}
+
+tss_util_file_with_tag_pattern() {
+  if [[ $# -gt 1 ]]; then
+    print -r "Only one positional argument expected" >&2
+    return 1
+  fi
+  local p
+  p=$1
+  if [[ $p = *[[:space:]]* ]]; then
+    print -r "Invalid pattern (contains whitespace); please provide a pattern for a single tag." >&2
+    return 1
+  fi
+
+  print -r "*[[](($p)|($p)[:space:]*|*[:space:]($p)|*[:space:]($p)[:space:]*)[]]*(.)"
 }
 
 tss_util() {
