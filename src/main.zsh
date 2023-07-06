@@ -30,8 +30,7 @@ tss() {
       tss_util "$@"
       ;;
     *)
-      print -r "Unknown subcommand: $subcommand" >&2
-      return 1
+      fail "Unknown subcommand: $subcommand"
       ;;
   esac
 }

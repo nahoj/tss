@@ -9,10 +9,7 @@ tss_location_index_all_tags() {
   fi
 
   local location index
-  location=$(tss_location_of_dir_unsafe .) || {
-    print "Not in a location" >&2
-    return 1
-  }
+  location=$(tss_location_of_dir_unsafe .) || fail "Not in a location"
   index="$location/.ts/tsi.json"
 
   # Get sorted, unique tags
@@ -211,8 +208,7 @@ tss_location_index() {
       tss_location_index_build "$@"
       ;;
     *)
-      print "Unknown subcommand $subcommand" >&2
-      return 1
+      fail "Unknown subcommand $subcommand"
       ;;
   esac
 }

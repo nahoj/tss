@@ -6,8 +6,7 @@ clean_one_file() {
   require_exists_taggable $file_path
   file_name=${file_path:t}
   if ! [[ $file_name =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
-    print -r "Ignoring file with ill-formed name: ${(qqq)file_path}" >&2
-    return 1
+    fail "Ignoring file with ill-formed name: ${(qqq)file_path}"
   fi
 
   local new_file_name
@@ -47,8 +46,7 @@ tss_set_tags() {
     file_name=${file_path:t}
 
     if ! [[ "$file_name" =~ $file_name_maybe_tag_group_regex ]]; then
-      print -r "Invalid file name: ${(qqq)file_path}" >&2
-      return 1
+      fail "Invalid file name: ${(qqq)file_path}"
     fi
 
     # If file has tag group, replace it
@@ -79,8 +77,7 @@ tag_in_patterns() {
   tag=$1
   tag_patterns=(${(s: :)2})
   if [[ ${#tag_patterns} -eq 0 ]]; then
-    print -r "No tag patterns given" >&2
-    return 1
+    fail "No tag patterns given"
   fi
 
   local pattern
@@ -144,8 +141,8 @@ tss_remove() {
   local remove_patterns file_paths
   remove_patterns=(${(s: :)1})
   if ((remove_patterns[(Ie)*])); then
-    print -r "Removing all tags with * is forbidden as it might be a mistake. If this is what you want to do, use:" >&2
-    print -r "    tss file clean FILE ..." >&2
+    logg "Removing all tags with * is forbidden as it might be a mistake. If this is what you want to do, use:"
+    logg "    tss file clean FILE ..."
     return 1
   fi
   shift

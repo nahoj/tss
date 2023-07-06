@@ -72,8 +72,7 @@ internal_file_tags() {
       return 0
     fi
   elif [[ -z $file_path ]]; then
-    print -r 'internal_file_tags: Invalid path: ""' >&2
-    return 1
+    fail 'internal_file_tags: Invalid path: ""'
   fi
 
   [[ ${file_path:t} =~ $file_name_maybe_tag_group_regex ]]

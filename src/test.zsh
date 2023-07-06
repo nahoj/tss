@@ -34,7 +34,7 @@ EOF
     shift
   fi
   if [[ $# -ne 1 ]]; then
-    print -r "Expected exactly one positional argument, got $# instead" >&2
+    logg "Expected exactly one positional argument, got $# instead"
     return 2
   fi
   local file_path

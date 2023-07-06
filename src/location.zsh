@@ -3,8 +3,7 @@ require_is_location() {
   local location
   location=$1
   if [[ ! -f "$location/.ts/tsi.json" ]]; then
-    print -r "Not a location: ${(qqq)location}" >&2
-    return 1
+    fail "Not a location: ${(qqq)location}"
   fi
 }
 
@@ -70,7 +69,7 @@ tss_location() {
       tss_location_of "$@"
       ;;
     *)
-      print -r "Unknown subcommand: $subcommand" >&2
+      log "Unknown subcommand: $subcommand"
       return 1
       ;;
   esac

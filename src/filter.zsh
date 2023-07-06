@@ -32,8 +32,7 @@ EOF
     shift
   fi
   if [[ $# -ne 0 ]]; then
-    print -r "No positional arguments expected" >&2
-    return 1
+    fail "No positional arguments expected"
   fi
 
   internal_filter

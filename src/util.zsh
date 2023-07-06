@@ -3,6 +3,15 @@
 # General utils
 ###############
 
+logg() {
+  print -r -- "tss:$@" >&2
+}
+
+fail() {
+  logg "$@"
+  return 1
+}
+
 # From https://stackoverflow.com/a/76516890
 # Takes the names of two array variables
 arrayeq() {
@@ -26,16 +35,13 @@ arrayeq() {
 
 require_parameter() {
   if [[ $# -ne 3 ]]; then
-    print -r "Usage: require_parameter <caller_function_name> <parameter_name> <type_pattern>" >&2
-    return 1
+    fail "Usage: require_parameter <caller_function_name> <parameter_name> <type_pattern>"
   fi
 
   if [[ ! -v $2 ]]; then
-    print -r -- "$1: Parameter ${(qq)2} must be set" >&2
-    return 1
+    fail "$1: Parameter ${(qq)2} must be set"
   elif [[ ${(t)${(P)2}} != ${~3} ]]; then
-    print -r -- "$1: Parameter ${(qq)2} must have type ${(qq)3}" >&2
-    return 1
+    fail "$1: Parameter ${(qq)2} must have type ${(qq)3}"
   fi
 }
 
@@ -70,8 +76,7 @@ with_lock_file() {
   local lock_file
   lock_file=$file.LOCK
   if [[ -e $lock_file ]]; then
-    print -r "File is locked: ${(qqq)file}" >&2
-    return 1
+    fail "File is locked: ${(qqq)file}"
   fi
 
   # FIXME doesn't remove $lock_file in case of ^C
@@ -102,8 +107,7 @@ require_does_not_exist() {
   file_path=$1
 
   if [[ -e $file_path ]]; then
-    print -r  "File already exists: ${(qqq)file_path}" >&2
-    return 1
+    fail "File already exists: ${(qqq)file_path}"
   fi
 }
 
@@ -112,8 +116,7 @@ require_exists() {
   pathh=$1
 
   if [[ ! -e $pathh ]]; then
-    print -r "No such file or directory: ${(qqq)pathh}" >&2
-    return 1
+    fail "No such file or directory: ${(qqq)pathh}"
   fi
 }
 
@@ -124,8 +127,7 @@ require_exists_taggable() {
   require_exists $file_path
 
   if [[ ! -f $file_path ]]; then
-    print -r  "Not a regular file: ${(qqq)file_path}" >&2
-    return 1
+    fail "Not a regular file: ${(qqq)file_path}"
   fi
 }
 
@@ -136,8 +138,7 @@ require_well_formed() {
   file_path=$1
 
   if [[ ! $file_path =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
-    print -r "Ill-formed file name: ${(qqq)file_path}" >&2
-    return 1
+    fail "Ill-formed file name: ${(qqq)file_path}"
   fi
 }
 
@@ -147,21 +148,18 @@ require_tag_valid() {
 
   # if $tag contains ] or [ or etc.
   if [[ "$tag" =~ '[][/[:cntrl:][:space:]]' ]]; then
-    print -r "Invalid tag: ${(qqq)tag}" >&2
-    return 1
+    fail "Invalid tag: ${(qqq)tag}"
   fi
 }
 
 tss_util_file_with_tag_pattern() {
   if [[ $# -gt 1 ]]; then
-    print -r "Only one positional argument expected" >&2
-    return 1
+    fail "Only one positional argument expected"
   fi
   local p
   p=$1
   if [[ $p = *[[:space:]]* ]]; then
-    print -r "Invalid pattern (contains whitespace); please provide a pattern for a single tag." >&2
-    return 1
+    fail "Invalid pattern (contains whitespace); please provide a pattern for a single tag."
   fi
 
   print -r "*[[](($p)|($p)[:space:]*|*[:space:]($p)|*[:space:]($p)[:space:]*)[]]*(.)"
@@ -176,8 +174,7 @@ tss_util() {
       tss_util_file_with_tag_pattern "$@"
       ;;
     *)
-      print -r "Unknown subcommand: $subcommand" >&2
-      return 1
+      fail "Unknown subcommand: $subcommand"
       ;;
   esac
 }
