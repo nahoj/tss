@@ -1,4 +1,4 @@
-tss_clean_one_file() {
+clean_one_file() {
   unsetopt warn_create_global warn_nested_var
 
   local file_path file_name
@@ -25,7 +25,7 @@ tss_clean() {
   local file_path
   local -i statuss=0
   for file_path in "$@"; do
-    tss_clean_one_file $file_path || statuss=$?
+    clean_one_file $file_path || statuss=$?
   done
   return $statuss
 }
@@ -40,7 +40,7 @@ tss_set_tags() {
 
   # if tags empty, clean file
   if [[ ${#tags[@]} -eq 0 ]]; then
-    tss_file_clean $file_path
+    clean_one_file $file_path
 
   else
     local file_name
@@ -102,7 +102,7 @@ internal_add_remove() {
     require_well_formed $file_path
     require_exists_taggable $file_path
 
-    old_tags=($(tss_tags $file_path))
+    old_tags=($(tss_tags -- $file_path))
     if [[ $#remove_patterns -gt 0 ]]; then
       new_tags=()
       for tag in "${old_tags[@]}"; do

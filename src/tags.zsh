@@ -3,41 +3,77 @@ tss_tags() {
   zparseopts -D -E -F - -help=help {n,-name-only}=name_only_opt
 
   if [[ -n $help ]]; then
-    cat <<EOF >&2
+    cat <<EOF
 
-Usage: tss tags [options] <file>
+Usage:          tss tags [options] <path>...
+(in particular) tss tags [options] <file>
 
-Print the tags for the given file, or an empty string if the file has no tags.
+Print all tags found on files in the given paths and/or files listed on stdin.
 
 Options:
-  -n, --name-only Use only the file's name, don't check whether the file exists and is a taggable file
+  -n, --name-only Use only the given file names; assume each path is a taggable
+                  file. In particular, this precludes browsing directories.
+  --stdin         Read file paths from stdin in addition to browsing paths given as arguments (if any)
   --help          Show this help message
 
 EOF
     return 0
   fi
 
-  if [[ $# -ne 1 ]]; then
-    print -r "Expected exactly one positional argument, got $# instead" >&2
-    return 1
+  if [[ $1 = '--' ]]; then
+    shift
   fi
-  local file_path
-  file_path=$1
+  local arg_paths
+  if [[ $# -eq 0 && -z $stdin_opt ]]; then
+    arg_paths=(*)
+  else
+    arg_paths=($@)
+  fi
 
-  internal_tags
+  local -aU tags
+  local file_path
+
+  if [[ $#arg_paths -gt 0 ]]; then
+    if [[ -n $name_only_opt ]]; then
+      for file_path in $arg_paths; do
+        tags+=(${(s: :)$(internal_file_tags)})
+      done
+
+    else
+      () {
+        # Always -n when using the output of tss_files
+        unsetopt warn_nested_var
+        local -ar name_only_opt=(-n)
+        tss_files -- "$arg_paths[@]" | while read -r file_path; do
+          tags+=(${(s: :)$(internal_file_tags)})
+        done || return $?
+      }
+    fi
+  fi
+
+  if [[ -n $stdin_opt ]]; then
+    while read -r file_path; do
+      tags+=(${(s: :)$(internal_file_tags)})
+    done
+  fi
+
+  print -r -- ${(in)tags}
 }
 
-internal_tags() {
+internal_file_tags() {
   unsetopt warn_create_global warn_nested_var
 
-  require_parameter internal_tags name_only_opt 'array*'
-  require_parameter internal_tags file_path 'scalar*'
+  require_parameter internal_file_tags name_only_opt 'array*'
+  require_parameter internal_file_tags file_path 'scalar*'
 
   if [[ -z $name_only_opt ]]; then
     require_exists $file_path
     if [[ ! -f $file_path ]]; then
       return 0
     fi
+  elif [[ -z $file_path ]]; then
+    print -r 'internal_file_tags: Invalid path: ""' >&2
+    return 1
   fi
 
   [[ ${file_path:t} =~ $file_name_maybe_tag_group_regex ]]

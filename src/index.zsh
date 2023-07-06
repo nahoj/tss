@@ -88,7 +88,7 @@ make_json_file_object() {
   local json_tag_array='[]'
   if [[ $is_regular_file == 'true' ]]; then
     local file_tags tag_objects tag
-    file_tags=($(tss_tags $file_path))
+    file_tags=($(tss_tags -- $file_path))
     tag_objects=("${(@f)$(for tag in "$file_tags[@]"; do make_json_tag_object $tag; done)}")
     json_tag_array="[${(j:, :)tag_objects[@]}]"
   fi
@@ -130,7 +130,7 @@ tss_location_index_build() {
         print ','
         make_json_file_object $file_path
       done
-    } >>$new_index
+    } >>$new_index || return $?
     print ']' >>$new_index
 
     mv $new_index $index
@@ -158,6 +158,9 @@ tss_location_index_files() {
   done
 
   # Process positional arguments
+  if [[ $1 = '--' ]]; then
+    shift
+  fi
   local location
   location=$1
   require_is_location $location
@@ -166,13 +169,13 @@ tss_location_index_files() {
 }
 
 internal_location_index_files() {
-  require_parameter pathh 'scalar*'
-  require_parameter path_starts_with 'scalar*'
+  require_parameter internal_location_index_files pathh 'scalar*'
+  require_parameter internal_location_index_files path_starts_with 'scalar*'
 
-  require_parameter location 'scalar*'
+  require_parameter internal_location_index_files location 'scalar*'
 
-  require_parameter patterns 'array*'
-  require_parameter anti_patterns 'array*'
+  require_parameter internal_location_index_files patterns 'array*'
+  require_parameter internal_location_index_files anti_patterns 'array*'
 
   local condition='.isFile'
   if [[ -n $pathn ]]; then
@@ -189,6 +192,7 @@ internal_location_index_files() {
 
   local index
   index="$location/.ts/tsi.json"
+  local -ar name_only_opt=(-n)
   jq -r "map(select($condition)) | .[].path" $index | internal_filter
 }
 

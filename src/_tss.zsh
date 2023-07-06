@@ -15,33 +15,6 @@ escape_value() {
   done
 }
 
-_tss_dir_all_tags() {
-  _arguments -s \
-             '1:dir:_files -/'
-}
-
-_tss_dir() {
-  local line state
-
-  _arguments -sC \
-             "1: :->cmds" \
-             "*::arg:->args"
-
-  case "$state" in
-    cmds)
-      _values "tss-dir command" \
-              "all-tags[List all tags that appear under a given directory]" \
-      ;;
-    args)
-      case $line[1] in
-        all-tags)
-          _tss_dir_all_tags
-          ;;
-      esac
-      ;;
-  esac
-}
-
 
 ##################
 # Edit subcommands
@@ -50,7 +23,7 @@ _tss_dir() {
 _tss_add() {
   local line state
 
-  _arguments -sC \
+  _arguments -s -C \
              '1: :->tags' \
              '*::file:->files'
 
@@ -59,12 +32,12 @@ _tss_add() {
       # One or more tags separated by spaces
       local location
       local -aU tags
-      if location=$(tss file location .); then
+      if location=$(tss location of .); then
         tags=($(tss location index all-tags $location))
       else
         # All tags in the current directory
         for f in *(.); do
-          tags+=($(tss file tags $f))
+          tags+=($(tss tags $f))
         done
       fi
       if [[ $#tags -ne 0 ]]; then
@@ -79,7 +52,7 @@ _tss_add() {
       if [[ $#tags -eq 1 ]]; then
         # Aim to offer files that don't have the tag
         local location
-        if location=$(tss file location .); then
+        if location=$(tss location of .); then
           local -a files
           files=("${(@f)"$( \
             tss location index files $location --path-starts-with "${(Q)line[$CURRENT]}" -T ${(b)tags[1]} \
@@ -115,7 +88,7 @@ _tss_add() {
   esac
 }
 
-# tss file clean takes one or more files as positional arguments
+# tss clean takes one or more files as positional arguments
 _tss_clean() {
   _arguments -s \
              '*::file:->files'
@@ -131,7 +104,7 @@ _tss_clean() {
 _tss_remove() {
   local line state
 
-  _arguments -sC \
+  _arguments -s -C \
              '1: :->tags' \
              '*::file:->files'
 
@@ -140,12 +113,12 @@ _tss_remove() {
       # One or more tag patterns separated by spaces; we offer existing tags
       local location
       local -aU tags
-      if location=$(tss file location .); then
+      if location=$(tss location of .); then
         tags=($(tss location index all-tags $location))
       else
         # All tags in the current directory
         for f in *(.); do
-          tags+=($(tss file tags $f))
+          tags+=($(tss tags $f))
         done
       fi
       if [[ $#tags -ne 0 ]]; then
@@ -160,7 +133,7 @@ _tss_remove() {
       local filter_pattern="(${(j:|:)patterns})"
 
       local location
-      if location=$(tss file location .); then
+      if location=$(tss location of .); then
         local -a files
         files=("${(@f)"$( \
           tss location index files $location --path-starts-with "${(Q)line[$CURRENT]}" -t $filter_pattern \
@@ -180,16 +153,18 @@ _tss_remove() {
 ###################
 
 _tss_files() {
-  _arguments -sC \
-             '1: :->tag' \
-             '*:file:_files'
+  _arguments -s -C : \
+             '--help[show help]' \
+             '*'{-T,--not-tags}"[Don't list files with any tag matching any of the given patterns]:patterns:->tags" \
+             '*'{-t,--tags}'[List files with tags matching all of the given patterns]:patterns:->tags' \
+             '*:file:_files' \
 
   case "$state" in
-    tag)
+    tags)
       local dir tags
-      dir=${$(tss file location .):-.} || return $?
-      tags=($(tss dir all-tags $dir)) || return $?
-      _values "tag" \
+      dir=${$(tss location of .):-.} || return $?
+      tags=($(tss tags $dir)) || return $?
+      _values -s ' ' "tag" \
               "${tags[@]}" \
       ;;
   esac
@@ -228,7 +203,7 @@ _tss_location_index_build() {
 _tss_location_index() {
   local line state
 
-  _arguments -sC \
+  _arguments -s -C \
              "1: :->cmds" \
              "*::arg:->args"
   case "$state" in
@@ -258,7 +233,7 @@ _tss_location_of() {
 _tss_location() {
   local line state
 
-  _arguments -sC \
+  _arguments -s -C \
              "1: :->cmds" \
              "*::arg:->args"
   case "$state" in
@@ -283,7 +258,7 @@ _tss_location() {
 _tss_util() {
   local line state
 
-  _arguments -sC \
+  _arguments -s -C \
              "1: :->cmds" \
              "*::arg:->args"
   case "$state" in
@@ -303,7 +278,7 @@ _tss_util() {
 _tss() {
   local line state
 
-  _arguments -sC \
+  _arguments -s -C \
              "1: :->cmds" \
              "*::arg:->args"
   case "$state" in
@@ -311,14 +286,14 @@ _tss() {
       _values "tss command" \
               "add[Add tags to one or more files.]" \
               "clean[Remove the whole tag group from one or more files.]" \
-              "dir[TODO descr]" \
-              "files[TODO descr]" \
-              "filter[TODO descr]" \
+              "files[List files]" \
+              "filter[Filter paths read on stdin]" \
               "location[TODO descr]" \
+              "query[Alias of 'tss files']" \
               "remove[Remove tags from one or more files.]" \
-              "tags[blah]" \
-              "test[blah]" \
-              "util[blah]" \
+              "tags[List tags]" \
+              "test[Tests whether a file meets some criteria]" \
+              "util[Utils]" \
       ;;
     args)
       case $line[1] in
@@ -328,10 +303,7 @@ _tss() {
         clean)
           _tss_clean
           ;;
-        dir)
-          _tss_dir
-          ;;
-        files)
+        files|query)
           _tss_files
           ;;
         filter)

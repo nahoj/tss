@@ -8,10 +8,7 @@ tss() {
     clean)
       tss_clean "$@"
       ;;
-    dir)
-      tss_dir "$@"
-      ;;
-    files)
+    files|query)
       tss_files "$@"
       ;;
     filter)

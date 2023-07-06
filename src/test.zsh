@@ -3,14 +3,14 @@ tss_test() {
   zparseopts -D -E -F - -help=help {n,-name-only}=name_only_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
 
   if [[ -n $help ]]; then
-    cat <<EOF >&2
+    cat <<EOF
 
 Usage: tss test [options] <file>
 
 Return 0 if true, 1 if false, 2 if an error occurred.
 
 Options:
-  -n, --name-only             Test only the file's name, don't check whether the file exists and is a taggable file
+  -n, --name-only             Test only the file's name, assume the file exists and is a taggable file
   -t, --tags <pattern...>     True only if the file has tags matching all the given patterns
   -T, --not-tags <pattern...> True only if the file doesn't have any tag matching any of the given patterns
   --help                      Show this help message
@@ -30,6 +30,9 @@ EOF
   done
 
   # Process positional arguments
+  if [[ $1 = '--' ]]; then
+    shift
+  fi
   if [[ $# -ne 1 ]]; then
     print -r "Expected exactly one positional argument, got $# instead" >&2
     return 2
@@ -47,7 +50,7 @@ internal_test() {
   require_parameter internal_test file_path 'scalar*' || return 2
 
   local tags pattern tag
-  tags=($(internal_tags)) || return 2
+  tags=($(internal_file_tags)) || return 2
 
   for pattern in "${patterns[@]}"; do
     for tag in "${tags[@]}"; do

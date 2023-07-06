@@ -46,11 +46,13 @@ tss_location_of() {
   pathh=$1
   require_exists $pathh
 
+  local abs_dir_path
   if [[ -d $pathh ]]; then
-    tss_location_of_dir_unsafe $(realpath -s $pathh)
+    abs_dir_path=${pathh:a}
   else
-    tss_location_of_dir_unsafe ${$(realpath -s $pathh):h}
+    abs_dir_path=${pathh:a:h}
   fi
+  tss_location_of_dir_unsafe $abs_dir_path
 }
 
 tss_location() {

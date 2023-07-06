@@ -3,7 +3,7 @@ tss_files() {
   zparseopts -D -E -F - -help=help {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
 
   if [[ -n $help ]]; then
-    cat <<EOF >&2
+    cat <<EOF
 
 Usage: tss files [options] <path>...
 
@@ -27,6 +27,9 @@ EOF
   done
 
   # Process positional arguments
+  if [[ $1 = '--' ]]; then
+    shift
+  fi
   local paths
   if [[ $# -eq 0 ]]; then
     paths=(*)
@@ -45,7 +48,7 @@ internal_files() {
   local pathh location
   local -r path_starts_with=''
   for pathh in "${paths[@]}"; do
-    require_exists $pathh || continue
+    require_exists $pathh
 
     if [[ -f $pathh ]]; then
       print -r -- $pathh
@@ -61,5 +64,5 @@ internal_files() {
   done | {
     local -ar name_only_opt=(-n)
     internal_filter
-  }
+  } || return $?
 }

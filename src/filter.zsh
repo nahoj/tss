@@ -3,12 +3,12 @@ tss_filter() {
   zparseopts -D -E -F - -help=help {n,-name-only}=name_only_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
 
   if [[ -n $help ]]; then
-    cat <<EOF >&2
+    cat <<EOF
 
 Usage: tss filter [options]
 
 Options:
-  -n, --name-only             Filter files based on their name, don't check whether they exist and are taggable files
+  -n, --name-only             Filter files based on their name, assume they exist and are taggable files
   -t, --tags <pattern...>     Only output files that have tags matching all the given patterns
   -T, --not-tags <pattern...> Don't output files that have any tag matching any of the given patterns
   --help                      Show this help message
@@ -28,6 +28,9 @@ EOF
   done
 
   # Reject positional arguments
+  if [[ $1 = '--' ]]; then
+    shift
+  fi
   if [[ $# -ne 0 ]]; then
     print -r "No positional arguments expected" >&2
     return 1
