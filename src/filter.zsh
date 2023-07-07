@@ -39,8 +39,8 @@ EOF
 }
 
 internal_filter() {
-  require_parameter internal_filter patterns 'array*'
-  require_parameter internal_filter anti_patterns 'array*'
+  require_parameter patterns 'array*'
+  require_parameter anti_patterns 'array*'
 
   if [[ $#patterns -eq 0 && $#anti_patterns -eq 0 ]]; then
     cat

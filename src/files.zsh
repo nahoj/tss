@@ -42,10 +42,10 @@ EOF
 }
 
 internal_files() {
-  require_parameter internal_files index_mode_opt 'array*'
-  require_parameter internal_files patterns 'array*'
-  require_parameter internal_files anti_patterns 'array*'
-  require_parameter internal_files paths 'array*'
+  require_parameter index_mode_opt 'array*'
+  require_parameter patterns 'array*'
+  require_parameter anti_patterns 'array*'
+  require_parameter paths 'array*'
 
   # No-index mode
   if [[ -n $index_mode_opt && ( $index_mode_opt[1] = '-I' || $index_mode_opt[1] = '--no-index' ) ]]; then
@@ -73,8 +73,8 @@ internal_files() {
 
 # List files in the given paths using index(es) if found
 internal_files_in_paths() {
-  require_parameter internal_files_in_paths patterns 'array*'
-  require_parameter internal_files_in_paths anti_patterns 'array*'
+  require_parameter patterns 'array*'
+  require_parameter anti_patterns 'array*'
 
   local paths
   paths=("$@")
@@ -100,11 +100,11 @@ internal_files_in_paths() {
 
 # List files under the given dir using the index if found
 internal_files_in_dir() {
-  require_parameter internal_files_in_dir patterns 'array*'
-  require_parameter internal_files_in_dir anti_patterns 'array*'
+  require_parameter patterns 'array*'
+  require_parameter anti_patterns 'array*'
   # optional: dont_look_up (true if defined)
 
-  [[ $# -eq 1 ]] || fail "internal_files_in_dir: Expected 1 argument, got $#"
+  [[ $# -eq 1 ]] || fail "Expected 1 argument, got $#"
   local pathh
   pathh=$1
 

@@ -44,10 +44,10 @@ EOF
 }
 
 internal_test() {
-  require_parameter internal_test name_only_opt 'array*' || return 2
-  require_parameter internal_test patterns 'array*' || return 2
-  require_parameter internal_test anti_patterns 'array*' || return 2
-  require_parameter internal_test file_path 'scalar*' || return 2
+  require_parameter name_only_opt 'array*' || return 2
+  require_parameter patterns 'array*' || return 2
+  require_parameter anti_patterns 'array*' || return 2
+  require_parameter file_path 'scalar*' || return 2
 
   local tags pattern tag
   tags=($(internal_file_tags)) || return 2

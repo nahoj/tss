@@ -169,13 +169,13 @@ tss_location_index_files() {
 }
 
 internal_location_index_files() {
-  require_parameter internal_location_index_files pathh 'scalar*'
-  require_parameter internal_location_index_files path_starts_with 'scalar*'
+  require_parameter pathh 'scalar*'
+  require_parameter path_starts_with 'scalar*'
 
-  require_parameter internal_location_index_files location 'scalar*'
+  require_parameter location 'scalar*'
 
-  require_parameter internal_location_index_files patterns 'array*'
-  require_parameter internal_location_index_files anti_patterns 'array*'
+  require_parameter patterns 'array*'
+  require_parameter anti_patterns 'array*'
 
   local condition='.isFile'
   if [[ -n $pathn ]]; then

@@ -63,8 +63,8 @@ EOF
 internal_file_tags() {
   unsetopt warn_create_global warn_nested_var
 
-  require_parameter internal_file_tags name_only_opt 'array*'
-  require_parameter internal_file_tags file_path 'scalar*'
+  require_parameter name_only_opt 'array*'
+  require_parameter file_path 'scalar*'
 
   if [[ -z $name_only_opt ]]; then
     require_exists $file_path
@@ -72,7 +72,7 @@ internal_file_tags() {
       return 0
     fi
   elif [[ -z $file_path ]]; then
-    fail 'internal_file_tags: Invalid path: ""'
+    fail 'Invalid path: ""'
   fi
 
   [[ ${file_path:t} =~ $file_name_maybe_tag_group_regex ]]

@@ -7,9 +7,16 @@ logg() {
   print -r -- "tss:$@" >&2
 }
 
-fail() {
-  logg "$@"
+failk() {
+  local -i funcstack_index
+  funcstack_index=$1
+  shift
+  logg "${funcstack[$((funcstack_index + 1))]}:$@"
   return 1
+}
+
+fail() {
+  failk 2 "$@"
 }
 
 # From https://stackoverflow.com/a/76516890
@@ -34,14 +41,14 @@ arrayeq() {
 }
 
 require_parameter() {
-  if [[ $# -ne 3 ]]; then
-    fail "Usage: require_parameter <caller_function_name> <parameter_name> <type_pattern>"
+  if [[ $# -ne 2 ]]; then
+    failk 2 "Usage: require_parameter <parameter_name> <type_pattern>"
   fi
 
-  if [[ ! -v $2 ]]; then
-    fail "$1: Parameter ${(qq)2} must be set"
-  elif [[ ${(t)${(P)2}} != ${~3} ]]; then
-    fail "$1: Parameter ${(qq)2} must have type ${(qq)3}"
+  if [[ ! -v $1 ]]; then
+    failk 2 "Parameter ${(qq)1} must be set"
+  elif [[ ${(t)${(P)1}} != ${~2} ]]; then
+    failk 2 "Parameter ${(qq)1} must have type ${(qq)2}"
   fi
 }
 
@@ -107,7 +114,7 @@ require_does_not_exist() {
   file_path=$1
 
   if [[ -e $file_path ]]; then
-    fail "File already exists: ${(qqq)file_path}"
+    failk 2 "File already exists: ${(qqq)file_path}"
   fi
 }
 
@@ -116,7 +123,7 @@ require_exists() {
   pathh=$1
 
   if [[ ! -e $pathh ]]; then
-    fail "No such file or directory: ${(qqq)pathh}"
+    failk 2 "No such file or directory: ${(qqq)pathh}"
   fi
 }
 
@@ -127,7 +134,7 @@ require_exists_taggable() {
   require_exists $file_path
 
   if [[ ! -f $file_path ]]; then
-    fail "Not a regular file: ${(qqq)file_path}"
+    failk 2 "Not a regular file: ${(qqq)file_path}"
   fi
 }
 
@@ -138,7 +145,7 @@ require_well_formed() {
   file_path=$1
 
   if [[ ! $file_path =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
-    fail "Ill-formed file name: ${(qqq)file_path}"
+    failk 2 "Ill-formed file name: ${(qqq)file_path}"
   fi
 }
 
@@ -148,7 +155,7 @@ require_tag_valid() {
 
   # if $tag contains ] or [ or etc.
   if [[ "$tag" =~ '[][/[:cntrl:][:space:]]' ]]; then
-    fail "Invalid tag: ${(qqq)tag}"
+    failk 2 "Invalid tag: ${(qqq)tag}"
   fi
 }
 

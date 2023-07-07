@@ -90,9 +90,9 @@ tag_in_patterns() {
 }
 
 internal_add_remove() {
-  require_parameter internal_add_remove add_tags 'array*'
-  require_parameter internal_add_remove remove_patterns 'array*'
-  require_parameter internal_add_remove file_paths 'array*'
+  require_parameter add_tags 'array*'
+  require_parameter remove_patterns 'array*'
+  require_parameter file_paths 'array*'
 
   local file_path old_tags new_tags tag
   for file_path in "${file_paths[@]}"; do

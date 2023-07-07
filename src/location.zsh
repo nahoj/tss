@@ -3,7 +3,7 @@ require_is_location() {
   local location
   location=$1
   if [[ ! -f "$location/.ts/tsi.json" ]]; then
-    fail "Not a location: ${(qqq)location}"
+    failk 2 "Not a location: ${(qqq)location}"
   fi
 }
 
