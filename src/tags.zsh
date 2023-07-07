@@ -25,7 +25,7 @@ EOF
   fi
   local arg_paths
   if [[ $# -eq 0 && -z $stdin_opt ]]; then
-    arg_paths=(*)
+    arg_paths=(*(N))
   else
     arg_paths=($@)
   fi

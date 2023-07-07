@@ -1,6 +1,6 @@
 tss_files() {
-  local help tags_opts not_tags_opts
-  zparseopts -D -E -F - -help=help {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
+  local help index_mode_opt tags_opts not_tags_opts
+  zparseopts -D -E -F - -help=help {I,-no-index}=index_mode_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
 
   if [[ -n $help ]]; then
     cat <<EOF
@@ -8,6 +8,7 @@ tss_files() {
 Usage: tss files [options] <path>...
 
 Options:
+  -I, --no-index              Don't use any index, only use the file system
   -t, --tags <pattern...>     Only output files that have tags matching all the given patterns
   -T, --not-tags <pattern...> Don't output files that have any tag matching any of the given patterns
   --help                      Show this help message
@@ -32,7 +33,7 @@ EOF
   fi
   local paths
   if [[ $# -eq 0 ]]; then
-    paths=(*)
+    paths=(*(N))
   else
     paths=("$@")
   fi
@@ -41,28 +42,90 @@ EOF
 }
 
 internal_files() {
+  require_parameter internal_files index_mode_opt 'array*'
   require_parameter internal_files patterns 'array*'
   require_parameter internal_files anti_patterns 'array*'
   require_parameter internal_files paths 'array*'
 
-  local pathh location
-  local -r path_starts_with=''
+  # No-index mode
+  if [[ -n $index_mode_opt && ( $index_mode_opt[1] = '-I' || $index_mode_opt[1] = '--no-index' ) ]]; then
+    local pathh file_path
+    for pathh in "${paths[@]}"; do
+      require_exists $pathh
+      if [[ -f $pathh ]]; then
+        print -r -- $pathh
+      elif [[ -d $pathh ]]; then
+        for file_path in $pathh/**/*(.N); do
+          print -r -- $file_path
+        done
+      fi
+
+    done | {
+      local -ar name_only_opt=(-n)
+      internal_filter
+
+    } || return $?
+
+  else
+    internal_files_in_paths "$paths[@]"
+  fi
+}
+
+# List files in the given paths using index(es) if found
+internal_files_in_paths() {
+  require_parameter internal_files_in_paths patterns 'array*'
+  require_parameter internal_files_in_paths anti_patterns 'array*'
+
+  local paths
+  paths=("$@")
+
+  local pathh file_path
+  local -ar name_only_opt=(-n)
   for pathh in "${paths[@]}"; do
     require_exists $pathh
 
     if [[ -f $pathh ]]; then
-      print -r -- $pathh
-    elif [[ -d $pathh ]]; then
-      if location=$(tss_location_of $pathh); then
-        internal_location_index_files
-      else
-        print -lr -- $pathh/**/*(.)
+      file_path=$pathh
+      if internal_test; then
+        print -r -- $pathh
       fi
+
+    elif [[ -d $pathh ]]; then
+      internal_files_in_dir $pathh
+
     # Not a regular file = don't print
     fi
+  done
+}
 
-  done | {
-    local -ar name_only_opt=(-n)
-    internal_filter
-  } || return $?
+# List files under the given dir using the index if found
+internal_files_in_dir() {
+  require_parameter internal_files_in_dir patterns 'array*'
+  require_parameter internal_files_in_dir anti_patterns 'array*'
+  # optional: dont_look_up (true if defined)
+
+  [[ $# -eq 1 ]] || fail "internal_files_in_dir: Expected 1 argument, got $#"
+  local pathh
+  pathh=$1
+
+  # Define location if possible
+  local location
+  if [[ -v dont_look_up ]]; then
+    # We know no ancestor directory is a location
+    if [[ -f $pathh/.ts/tsi.json ]]; then
+        location=.
+    fi
+  else
+    location=$(tss_location_of $pathh) || true
+  fi
+
+  # If we found a location
+  if [[ -n $location ]]; then
+    local -r path_starts_with=''
+    internal_location_index_files
+
+  else
+    local -r dont_look_up
+    internal_files_in_paths $pathh/*(N)
+  fi
 }

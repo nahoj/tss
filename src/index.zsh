@@ -76,7 +76,7 @@ make_json_file_object() {
   local -A stat
   zstat -H stat $file_path
   local is_regular_file
-  is_regular_file=$((( 0x8000 & stat[mode] )) && print 'true' || print 'false')
+  is_regular_file=$((( 8#100000 & stat[mode] )) && print 'true' || print 'false')
 
   local extension
   [[ $file_name =~ $file_name_maybe_tag_group_regex ]]
@@ -119,15 +119,18 @@ tss_location_index_build() {
     new_index="$index.NEW"
 
     print '[' >$new_index
-    print -lr -- **/* | {
-      local file_path
-      read -r file_path || return 0
-      make_json_file_object $file_path
-      while read -r file_path; do
-        print ','
+    # If the current dir is not empty
+    if [ .(FN) ]; then
+      print -lr -- **/* | {
+        local file_path
+        read -r file_path || return 0
         make_json_file_object $file_path
-      done
-    } >>$new_index || return $?
+        while read -r file_path; do
+          print ','
+          make_json_file_object $file_path
+        done
+      } >>$new_index || return $?
+    fi
     print ']' >>$new_index
 
     mv $new_index $index

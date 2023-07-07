@@ -36,7 +36,7 @@ _tss_add() {
         tags=($(tss location index all-tags $location))
       else
         # All tags in the current directory
-        for f in *(.); do
+        for f in *(.N); do
           tags+=($(tss tags $f))
         done
       fi
@@ -62,11 +62,11 @@ _tss_add() {
         else
           # Don't browse recursively, just read $line[$CURRENT]'s dir
           local dirs
-          dirs=(${(Q)line[$CURRENT]}*(/))
+          dirs=(${(Q)line[$CURRENT]}*(/N))
           if [[ $#dirs -eq 0 ]]; then
             # Offer filtered files
             local all_regular_files
-            all_regular_files=(${(Q)line[$CURRENT]}*(.))
+            all_regular_files=(${(Q)line[$CURRENT]}*(.N))
             if [[ $#all_regular_files -ne 0 ]]; then
               local files
               files=($(tss tag files '' -T ${(b)tags[1]} "$all_regular_files[@]"))
@@ -117,7 +117,7 @@ _tss_remove() {
         tags=($(tss location index all-tags $location))
       else
         # All tags in the current directory
-        for f in *(.); do
+        for f in *(.N); do
           tags+=($(tss tags $f))
         done
       fi
