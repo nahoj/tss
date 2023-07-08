@@ -29,16 +29,17 @@ tss_clean() {
   return $statuss
 }
 
-tss_set_tags() {
+set_file_tags() {
   unsetopt warn_create_global warn_nested_var
 
   local file_path tags
   file_path=$1
   require_exists_taggable $file_path
-  tags=(${(s: :)2})
+  shift
+  tags=($@)
 
   # if tags empty, clean file
-  if [[ ${#tags[@]} -eq 0 ]]; then
+  if [[ $#tags -eq 0 ]]; then
     clean_one_file $file_path
 
   else
@@ -52,14 +53,14 @@ tss_set_tags() {
     # If file has tag group, replace it
     local new_file_name
     if [[ -n $match[2] ]]; then
-      new_file_name="$match[1][${tags[@]}]$match[4]"
+      new_file_name="$match[1][${(j: :)tags}]$match[4]"
 
     # Else, insert tag group before extension if present, else at end of file name
     else
       if [[ $file_name =~ '^(.+)(\.[^.]+)$' ]]; then
-        new_file_name="$match[1][${tags[@]}]$match[2]"
+        new_file_name="$match[1][${(j: :)tags}]$match[2]"
       else
-        new_file_name="${file_name}[${tags[@]}]"
+        new_file_name="${file_name}[${(j: :)tags}]"
       fi
     fi
 
@@ -73,15 +74,16 @@ tss_set_tags() {
 }
 
 tag_in_patterns() {
-  local tag tag_patterns
+  local tag patterns
   tag=$1
-  tag_patterns=(${(s: :)2})
-  if [[ ${#tag_patterns} -eq 0 ]]; then
+  shift
+  patterns=($@)
+  if [[ $#patterns -eq 0 ]]; then
     fail "No tag patterns given"
   fi
 
   local pattern
-  for pattern in "${tag_patterns[@]}"; do
+  for pattern in "${patterns[@]}"; do
     if [[ $tag = ${~pattern} ]]; then
       return 0
     fi
@@ -95,15 +97,16 @@ internal_add_remove() {
   require_parameter file_paths 'array*'
 
   local file_path old_tags new_tags tag
+  local -ar name_only_opt=(-n)
   for file_path in "${file_paths[@]}"; do
     require_well_formed $file_path
     require_exists_taggable $file_path
 
-    old_tags=($(tss_tags -- $file_path))
+    old_tags=(${(s: :)$(internal_file_tags)})
     if [[ $#remove_patterns -gt 0 ]]; then
       new_tags=()
       for tag in "${old_tags[@]}"; do
-        if ! tag_in_patterns $tag "$remove_patterns"; then
+        if ! tag_in_patterns $tag $remove_patterns; then
           new_tags+=($tag)
         fi
       done
@@ -118,7 +121,7 @@ internal_add_remove() {
     done
 
     if ! arrayeq new_tags old_tags; then
-      tss_set_tags $file_path "$new_tags"
+      set_file_tags $file_path $new_tags
     fi
   done
 }

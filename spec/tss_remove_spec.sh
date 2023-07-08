@@ -58,4 +58,22 @@ Describe 'tss remove'
     The file "$file" should not be exist
     The file "_test/file[tag2 tag4].ext" should be exist
   End
+
+  ExampleGroup 'Special characters'
+    Example
+      local file="_test/file[a *].ext"
+      touch "$file"
+      When call tss remove '*[*]*' "$file"
+      The status should equal 0
+      The file "_test/file[a].ext" should be exist
+    End
+
+    Example
+      local file="_test/file[a].ext"
+      touch "$file"
+      When call tss remove '*[*]*' "$file"
+      The status should equal 0
+      The file "$file" should be exist
+    End
+  End
 End

@@ -155,7 +155,7 @@ require_tag_valid() {
 
   # if $tag contains ] or [ or etc.
   if [[ "$tag" =~ '[][/[:cntrl:][:space:]]' ]]; then
-    failk 2 "Invalid tag: ${(qqq)tag}"
+    failk 2 "Invalid tag: ${(qqqq)tag}"
   fi
 }
 

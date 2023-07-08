@@ -22,10 +22,10 @@ EOF
   # Process options
   local -aU patterns anti_patterns
   local -i i
-  for ((i=2; i <= ${#tags_opts}; i+=2)); do
+  for ((i=2; i <= $#tags_opts; i+=2)); do
     patterns+=(${(s: :)tags_opts[i]})
   done
-  for ((i=2; i <= ${#not_tags_opts}; i+=2)); do
+  for ((i=2; i <= $#not_tags_opts; i+=2)); do
     anti_patterns+=(${(s: :)not_tags_opts[i]})
   done
 
@@ -50,7 +50,7 @@ internal_test() {
   require_parameter file_path 'scalar*' || return 2
 
   local tags pattern tag
-  tags=($(internal_file_tags)) || return 2
+  tags=(${(s: :)$(internal_file_tags)}) || return 2
 
   for pattern in "${patterns[@]}"; do
     for tag in "${tags[@]}"; do

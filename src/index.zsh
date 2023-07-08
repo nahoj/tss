@@ -142,6 +142,9 @@ tss_location_index_build() {
           if (( i++ > 0 )); then
             print ','
           fi
+          if [[ $file_path = *[[:cntrl:]]* ]]; then
+            logg "Warning: File path contains control character(s): ${(qqqq)file_path}"
+          fi
           internal_print_json_file_object
         done
       } >>$new_index || return $?
@@ -165,10 +168,10 @@ tss_location_index_files() {
 
   local -aU patterns anti_patterns
   local -i i
-  for ((i=2; i <= ${#tags_opts}; i+=2)); do
+  for ((i=2; i <= $#tags_opts; i+=2)); do
     patterns+=(${(s: :)tags_opts[i]})
   done
-  for ((i=2; i <= ${#not_tags_opts}; i+=2)); do
+  for ((i=2; i <= $#not_tags_opts; i+=2)); do
     anti_patterns+=(${(s: :)not_tags_opts[i]})
   done
 

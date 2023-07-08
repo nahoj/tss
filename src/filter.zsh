@@ -20,10 +20,10 @@ EOF
   # Process options
   local -aU patterns anti_patterns
   local -i i
-  for ((i=2; i <= ${#tags_opts}; i+=2)); do
+  for ((i=2; i <= $#tags_opts; i+=2)); do
     patterns+=(${(s: :)tags_opts[i]})
   done
-  for ((i=2; i <= ${#not_tags_opts}; i+=2)); do
+  for ((i=2; i <= $#not_tags_opts; i+=2)); do
     anti_patterns+=(${(s: :)not_tags_opts[i]})
   done
 

@@ -80,4 +80,21 @@ Describe 'tss add'
     The file "_test/file[tag1 tag2 tag3].ext" should be exist
   End
 
+  ExampleGroup 'Special characters'
+    Example
+      local file="_test/file[a].ext"
+      touch "$file"
+      When call tss add '*' "$file"
+      The status should equal 0
+      The file "_test/file[a *].ext" should be exist
+    End
+
+    Example
+      local file="_test/file[a *].ext"
+      touch "$file"
+      When call tss add '*' "$file"
+      The status should equal 0
+      The file "$file" should be exist
+    End
+  End
 End

@@ -32,4 +32,38 @@ $file2"
     The status should equal 0
     The output should equal "$file3"
   End
+
+  ExampleGroup 'Special characters'
+    Example
+      local file="_test/file[a*b].ext"
+      touch "$file"
+      When call tss files -t 'a[*]b' _test
+      The status should equal 0
+      The output should equal "$file"
+    End
+
+    Example
+      local file="_test/file[a?b].ext"
+      touch "$file"
+      When call tss files -t 'a[*]b' _test
+      The status should equal 0
+      The output should be blank
+    End
+
+    Example
+      local file="_test/file[a*b].ext"
+      touch "$file"
+      When call tss files -T 'a[*]b' _test
+      The status should equal 0
+      The output should be blank
+    End
+
+    Example
+      local file="_test/file[a?b].ext"
+      touch "$file"
+      When call tss files -T 'a[*]b' _test
+      The status should equal 0
+      The output should equal "$file"
+    End
+  End
 End

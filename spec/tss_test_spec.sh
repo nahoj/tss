@@ -30,8 +30,6 @@ Describe 'tss test'
     End
   End
 
-  # TODO: special chars
-
   ExampleGroup 'Basics: simple tag'
     Example
       When call tss test -n -t a 'file[a]'
@@ -112,6 +110,28 @@ Describe 'tss test'
 
     Example
       When call tss test -n -T '*a*' 'dir/file[b]'
+      The status should equal 0
+    End
+  End
+
+  ExampleGroup 'Special characters'
+    Example
+      When call tss test -n -t 'a[*]b' 'file[a*b]'
+      The status should equal 0
+    End
+
+    Example
+      When call tss test -n -t 'a[*]b' 'file[a?b]'
+      The status should equal 1
+    End
+
+    Example
+      When call tss test -n -T 'a[*]b' 'file[a*b]'
+      The status should equal 1
+    End
+
+    Example
+      When call tss test -n -T 'a[*]b' 'file[a?b]'
       The status should equal 0
     End
   End
