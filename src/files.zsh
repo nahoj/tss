@@ -121,8 +121,7 @@ internal_files_in_dir() {
 
   # If we found a location
   if [[ -n $location ]]; then
-    local -r path_starts_with=''
-    internal_location_index_files
+    internal_location_index_files_path
 
   else
     local -r dont_look_up

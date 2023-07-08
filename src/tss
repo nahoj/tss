@@ -7,7 +7,7 @@
 
 set -e
 
-setopt err_return no_unset pipe_fail typeset_silent
+setopt err_return no_unset pipe_fail
 setopt local_loops local_options local_patterns local_traps
 setopt -m 'warn*'
 

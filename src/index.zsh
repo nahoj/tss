@@ -157,15 +157,10 @@ tss_location_index_build() {
 }
 
 tss_location_index_files() {
-  local -a tags_opts not_tags_opts
-  local -A opts
-  zparseopts -D -E -F -A opts - -path: -path-starts-with: {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
+  local -a path_opt tags_opts not_tags_opts
+  zparseopts -D -E -F - {-path,-path-starts-with}:=path_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
 
   # Process options
-  local pathh path_starts_with
-  pathh=${opts[--path]:-}
-  path_starts_with=${opts[--path-starts-with]:-}
-
   local -aU patterns anti_patterns
   local -i i
   for ((i=2; i <= $#tags_opts; i+=2)); do
@@ -181,37 +176,117 @@ tss_location_index_files() {
   fi
   local location
   location=$1
-  require_is_location $location
 
-  internal_location_index_files
+  case ${path_opt[1]:-} in
+    '')
+      local -r pathh=.
+      internal_location_index_files_path
+      ;;
+    --path)
+      local -r pathh=$path_opt[2]
+      internal_location_index_files_path
+      ;;
+    --path-starts-with)
+      local -r path_starts_with=$path_opt[2]
+      internal_location_index_files_path_starts_with
+      ;;
+  esac
 }
 
-internal_location_index_files() {
-  require_parameter pathh 'scalar*'
-  require_parameter path_starts_with 'scalar*'
-
+internal_location_index_files_path() {
   require_parameter location 'scalar*'
+  require_parameter pathh 'scalar*'
+  require_exists $pathh
 
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
 
-  local condition='.isFile'
-  if [[ -n $pathh ]]; then
-    require_exists $pathh
-    if [[ -d $pathh ]]; then
-      condition+=' and (.path | startswith('$(print_json_string "$pathh/")'))'
-    else
-      condition+=' and .path == '$(print_json_string $pathh)
+  if [[ -d $pathh ]]; then
+    local -r dir_path=$pathh
+    local -r file_name_prefix=
+    internal_location_index_files_dir_and_file_name_prefix
+
+  else
+    # For single files, don't use the index at all
+    local file_path=$pathh
+    local -ar name_only_opt=()
+    if [[ ${file_path:a} = ${location:a}/* ]] && internal_test; then
+      print -r -- $file_path
     fi
   fi
-  if [[ -n $path_starts_with ]]; then
-    condition+=' and (.path | startswith('$(print_json_string $path_starts_with)'))'
+}
+
+internal_location_index_files_path_starts_with() {
+  require_parameter location 'scalar*'
+  require_parameter path_starts_with 'scalar*'
+
+  require_parameter patterns 'array*'
+  require_parameter anti_patterns 'array*'
+
+  local file_name_prefix=${path_starts_with##*/}             # $path_starts_with after last / excluded
+  local dir_path=${${path_starts_with%$file_name_prefix}:-.} # $path_starts_with up to last / included, or .
+  internal_location_index_files_dir_and_file_name_prefix
+}
+
+internal_location_index_files_dir_and_file_name_prefix() {
+  require_parameter location 'scalar*'
+  require_is_location $location
+
+  require_parameter dir_path 'scalar*'
+  require_parameter file_name_prefix 'scalar*'
+
+  require_parameter patterns 'array*'
+  require_parameter anti_patterns 'array*'
+
+  local abs_location=${location:a}
+  local abs_dir_path=${dir_path:a}
+  if [[ $abs_dir_path = $PWD ]]; then
+    local output_prefix=
+  else
+    local output_prefix="${dir_path%/}/"
   fi
 
-  local index
-  index="$location/.ts/tsi.json"
-  local -ar name_only_opt=(-n)
-  jq -r "map(select($condition)) | .[].path" $index | internal_filter
+  if [[ $abs_dir_path = $abs_location ]]; then
+    local index_prefix=$file_name_prefix
+    local -i offset=0
+
+  # If the dir is strictly under the location
+  elif [[ $abs_dir_path = $abs_location/* ]]; then
+    local index_dir_path=${abs_dir_path#$abs_location/}
+    local index_prefix="$index_dir_path/$file_name_prefix"
+    local -i offset=$(($#index_dir_path + 1))
+
+  # If the location is strictly under the dir
+  elif [[ $abs_location = $abs_dir_path/* ]]; then
+    # All files in the index are in the path
+    local index_prefix=
+    local -i offset=0
+    output_prefix+="${abs_location#$abs_dir_path/}/"
+
+  else
+    # No file in the index is in the path
+    return 0
+  fi
+
+  local condition='.isFile'
+  if [[ -n $index_prefix ]]; then
+    condition+=' and (.path | startswith('$(print_json_string $index_prefix)'))'
+  fi
+
+  local index="$location/.ts/tsi.json"
+  jq -r 'map(select('$condition') | .path) | .[]' $index | {
+
+    local file_path
+    while IFS= read -r file_path; do
+      print -rn -- $output_prefix
+      print -r -- ${file_path:$offset}
+    done
+
+  } | {
+    local -ar name_only_opt=(-n)
+    internal_filter
+
+  } || return $?
 }
 
 tss_location_index() {

@@ -69,7 +69,7 @@ _tss_add() {
             all_regular_files=(${(Q)line[$CURRENT]}*(.N))
             if [[ $#all_regular_files -ne 0 ]]; then
               local files
-              files=($(tss tag files '' -T ${(b)tags[1]} "$all_regular_files[@]"))
+              files=($(tss files -T ${(b)tags[1]} "$all_regular_files[@]"))
               local values
               values=("${(@f)$(escape_value "${(F)files}")}")
               _values "file" "$values[@]"
