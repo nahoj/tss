@@ -28,7 +28,7 @@ EOF
   done
 
   # Reject positional arguments
-  if [[ $1 = '--' ]]; then
+  if [[ ${1:-} = '--' ]]; then
     shift
   fi
   if [[ $# -ne 0 ]]; then

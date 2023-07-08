@@ -5,7 +5,7 @@ tss_test() {
   if [[ -n $help ]]; then
     cat <<EOF
 
-Usage: tss test [options] <file>
+Usage: tss test [options] [--] <file>
 
 Return 0 if true, 1 if false, 2 if an error occurred.
 
@@ -30,7 +30,7 @@ EOF
   done
 
   # Process positional arguments
-  if [[ $1 = '--' ]]; then
+  if [[ ${1:-} = '--' ]]; then
     shift
   fi
   if [[ $# -ne 1 ]]; then

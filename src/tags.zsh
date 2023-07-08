@@ -1,12 +1,12 @@
 tss_tags() {
-  local help name_only_opt
-  zparseopts -D -E -F - -help=help {n,-name-only}=name_only_opt
+  local help name_only_opt stdin_opt
+  zparseopts -D -E -F - -help=help {n,-name-only}=name_only_opt -stdin=stdin_opt
 
   if [[ -n $help ]]; then
     cat <<EOF
 
-Usage:          tss tags [options] <path>...
-(in particular) tss tags [options] <file>
+Usage:          tss tags [options] [--] <path>...
+(in particular) tss tags [options] [--] <file>
 
 Print all tags found on files in the given paths and/or files listed on stdin.
 
@@ -20,7 +20,7 @@ EOF
     return 0
   fi
 
-  if [[ $1 = '--' ]]; then
+  if [[ ${1:-} = '--' ]]; then
     shift
   fi
   local arg_paths

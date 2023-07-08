@@ -16,8 +16,7 @@ tss_location_index_all_tags() {
   jq -r '[.[].tags | .[].title] | unique | .[]' $index
 }
 
-# (>100x as fast as calling jq on a single string)
-make_json_string() {
+print_json_string() {
   local s
   s=$1
 
@@ -51,58 +50,71 @@ make_json_string() {
         ;;
     esac
   done
-  print '"'
+  print -n '"'
 }
 
-make_json_tag_object() {
-  local json_title
-  json_title=$(make_json_string $1)
-  print -r '{ "title": '$json_title', "type": "plain" }'
+print_json_tag_object() {
+  print -rn '{ "title": '
+  print_json_string $1
+  print -rn ', "type": "plain" }'
 }
 
-make_json_file_object() {
+internal_print_json_file_object() {
   unsetopt warn_create_global warn_nested_var
 
-  local file_path
-  file_path=$1
+  require_parameter typ 'scalar*'
+  require_parameter mtime 'scalar*'
+  require_parameter size_bytes 'scalar*'
+  require_parameter file_path 'scalar*'
 
-  local uuid
-  uuid=$(uuidgen)
-
-  local file_name json_file_name
+  local file_name
   file_name=${file_path:t}
-  json_file_name=$(make_json_string $file_name)
 
-  local -A stat
-  zstat -H stat $file_path
-  local is_regular_file
-  is_regular_file=$((( 8#100000 & stat[mode] )) && print 'true' || print 'false')
+  print '  {'
+  print -n '    "uuid": "'
+  print -n $(uuidgen)
 
-  local extension
-  [[ $file_name =~ $file_name_maybe_tag_group_regex ]]
-  extension=$(make_json_string ${(e)${:-"$match[1]$match[4]"}})
+  print -n '",\n    "name": '
+  print_json_string $file_name
 
-  local json_tag_array='[]'
-  if [[ $is_regular_file == 'true' ]]; then
-    local file_tags tag_objects tag
-    file_tags=($(tss_tags -- $file_path))
-    tag_objects=("${(@f)$(for tag in "$file_tags[@]"; do make_json_tag_object $tag; done)}")
-    json_tag_array="[${(j:, :)tag_objects[@]}]"
+  print -n ',\n    "isFile": '
+  if [[ $typ = 'f' ]]; then
+    print -n 'true'
+  else
+    print -n 'false'
   fi
 
-  local json_path
-  json_path=$(make_json_string $file_path)
+  print -n ',\n    "extension": '
+  local file_name_without_tag_group extension
+  [[ $file_name =~ $file_name_maybe_tag_group_regex ]]
+  file_name_without_tag_group="$match[1]$match[4]"
+  extension=${file_name_without_tag_group:e}
+  print_json_string "$extension"
 
-  print -r '  {'
-  print -r '    "uuid": "'$uuid'",'
-  print -r '    "name": '$json_file_name','
-  print -r '    "isFile": '$is_regular_file','
-  print -r '    "extension": '$extension','
-  print -r '    "tags": '$json_tag_array','
-  print -r '    "size": '$stat[size]','
-  print -r '    "lmdt": '$stat[mtime]'000,'
-  print -r '    "path": '$json_path
-  print -r '  }'
+  print -n ',\n    "tags": ['
+  if [[ $typ = 'f' ]]; then
+    local tag
+    local -ar name_only_opt=(-n)
+    local -i i=0
+    for tag in ${(s: :)$(internal_file_tags)}; do
+      if (( i++ > 0 )); then
+        print -rn ', '
+      fi
+      print_json_tag_object $tag
+    done
+  fi
+
+  print -n '],\n    "size": '
+  print -n $size_bytes
+
+  print -n ',\n    "lmdt": '
+  [[ $mtime =~ '^(-?[0-9]+)\.([0-9]{3})[0-9]*$' ]]
+  print -n $match[1]
+  print -n $match[2]
+
+  print -n ',\n    "path": '
+  print_json_string $file_path
+  print -n '\n  }'
 }
 
 tss_location_index_build() {
@@ -121,17 +133,20 @@ tss_location_index_build() {
     print '[' >$new_index
     # If the current dir is not empty
     if [ .(FN) ]; then
-      print -lr -- **/* | {
-        local file_path
-        read -r file_path || return 0
-        make_json_file_object $file_path
-        while read -r file_path; do
-          print ','
-          make_json_file_object $file_path
+      # Exclude hidden files
+      find [^.]* -not -path '*/.*' -printf '%y\t%T@\t%s\t' -print0 | {
+        local IFS=$'\t'
+        local typ mtime size_bytes file_path
+        local -i i=0
+        while read -r -d $'\0' typ mtime size_bytes file_path; do
+          if (( i++ > 0 )); then
+            print ','
+          fi
+          internal_print_json_file_object
         done
       } >>$new_index || return $?
     fi
-    print ']' >>$new_index
+    print '\n]' >>$new_index
 
     mv $new_index $index
   }
@@ -158,7 +173,7 @@ tss_location_index_files() {
   done
 
   # Process positional arguments
-  if [[ $1 = '--' ]]; then
+  if [[ ${1:-} = '--' ]]; then
     shift
   fi
   local location
@@ -178,16 +193,16 @@ internal_location_index_files() {
   require_parameter anti_patterns 'array*'
 
   local condition='.isFile'
-  if [[ -n $pathn ]]; then
+  if [[ -n $pathh ]]; then
     require_exists $pathh
     if [[ -d $pathh ]]; then
-      condition+=' and (.path | startswith('$(make_json_string "$pathh/")'))'
+      condition+=' and (.path | startswith('$(print_json_string "$pathh/")'))'
     else
-      condition+=' and .path == '$(make_json_string $pathh)
+      condition+=' and .path == '$(print_json_string $pathh)
     fi
   fi
   if [[ -n $path_starts_with ]]; then
-    condition+=' and (.path | startswith('$(make_json_string $path_starts_with)'))'
+    condition+=' and (.path | startswith('$(print_json_string $path_starts_with)'))'
   fi
 
   local index

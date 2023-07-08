@@ -5,7 +5,7 @@ tss_files() {
   if [[ -n $help ]]; then
     cat <<EOF
 
-Usage: tss files [options] <path>...
+Usage: tss files [options] [--] <path>...
 
 Options:
   -I, --no-index              Don't use any index, only use the file system
@@ -28,7 +28,7 @@ EOF
   done
 
   # Process positional arguments
-  if [[ $1 = '--' ]]; then
+  if [[ ${1:-} = '--' ]]; then
     shift
   fi
   local paths
