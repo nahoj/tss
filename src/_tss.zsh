@@ -60,22 +60,7 @@ _tss_add() {
         _multi_parts / files
 
       else
-        # Don't browse recursively, just read $line[$CURRENT]'s dir
-        local dirs=(${(Q)line[$CURRENT]}*(/N))
-        if [[ $#dirs -eq 0 ]]; then
-          # Offer filtered files
-          local all_regular_files=(${(Q)line[$CURRENT]}*(.N))
-          if [[ $#all_regular_files -ne 0 ]]; then
-            local files
-            files=($(tss files --not-all-tags "${(j: :)patterns}" $all_regular_files))
-            local values
-            values=("${(@f)$(escape_value "${(F)files}")}")
-            _values "file" "$values[@]"
-          fi
-        else
-          # Give up on filtering
-          _files -g '*(.)'
-        fi
+        _files -g "$(tss util files-with-not-all-tags-pattern $patterns)"
       fi
       ;;
   esac
@@ -261,6 +246,7 @@ _tss_util() {
   case "$state" in
     cmds)
       _values "tss-tag command" \
+              "file-with-not-all-tags-pattern[Output a glob pattern matching any file whose tags don't match all the fiven patterns]" \
               "file-with-tag-pattern[Output a glob pattern matching any file with a tag matching the given pattern]" \
       ;;
     args)

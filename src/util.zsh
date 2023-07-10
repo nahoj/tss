@@ -158,9 +158,25 @@ require_tag_valid() {
   fi
 }
 
+tss_util_file_with_not_all_tags_pattern() {
+  if [[ $# -eq 0 ]]; then
+    fail "Usage: tss util file-with-not-all-tags-pattern <pattern>..."
+  fi
+  local patterns=($@)
+
+  local p allowed_file_patterns=()
+  for p in $patterns; do
+    if [[ $p = *[[:space:]]* ]]; then
+      fail "Invalid pattern (contains whitespace): ${(qqqq)p}"
+    fi
+    allowed_file_patterns+=("^(*[[](($p)|($p)[[:space:]]*|*[[:space:]]($p)|*[[:space:]]($p)[[:space:]]*)[]]*)")
+  done
+  print -r "(${(j:|:)allowed_file_patterns[@]})(.)"
+}
+
 tss_util_file_with_tag_pattern() {
-  if [[ $# -gt 1 ]]; then
-    fail "Only one positional argument expected"
+  if [[ $# -ne 1 ]]; then
+    fail "Usage: tss util file-with-tag-pattern <pattern>"
   fi
   local p
   p=$1
@@ -168,7 +184,7 @@ tss_util_file_with_tag_pattern() {
     fail "Invalid pattern (contains whitespace); please provide a pattern for a single tag."
   fi
 
-  print -r "*[[](($p)|($p)[:space:]*|*[:space:]($p)|*[:space:]($p)[:space:]*)[]]*(.)"
+  print -r "*[[](($p)|($p)[[:space:]]*|*[[:space:]]($p)|*[[:space:]]($p)[[:space:]]*)[]]*(.)"
 }
 
 tss_util() {
@@ -176,6 +192,9 @@ tss_util() {
   subcommand=$1
   shift
   case $subcommand in
+    file-with-not-all-tags-pattern)
+      tss_util_file_with_not_all_tags_pattern "$@"
+      ;;
     file-with-tag-pattern)
       tss_util_file_with_tag_pattern "$@"
       ;;
