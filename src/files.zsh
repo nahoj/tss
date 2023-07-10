@@ -1,6 +1,7 @@
 tss_files() {
-  local help index_mode_opt tags_opts not_tags_opts
-  zparseopts -D -E -F - -help=help {I,-no-index}=index_mode_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
+  local help index_mode_opt tags_opts not_tags_opts not_all_tags_opts
+  zparseopts -D -E -F - -help=help {I,-no-index}=index_mode_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts \
+    -not-all-tags+:=not_all_tags_opts
 
   if [[ -n $help ]]; then
     cat <<EOF
@@ -11,6 +12,7 @@ Options:
   -I, --no-index              Don't use any index, only use the file system
   -t, --tags <pattern...>     Only output files that have tags matching all the given patterns
   -T, --not-tags <pattern...> Don't output files that have any tag matching any of the given patterns
+  --not-all-tags <pattern...> Don't output files that have tags matching all of the given patterns
   --help                      Show this help message
 
 EOF
@@ -18,13 +20,16 @@ EOF
   fi
 
   # Process options
-  local -aU patterns anti_patterns
+  local -aU patterns anti_patterns not_all_patterns
   local -i i
   for ((i=2; i <= $#tags_opts; i+=2)); do
     patterns+=(${(s: :)tags_opts[i]})
   done
   for ((i=2; i <= $#not_tags_opts; i+=2)); do
     anti_patterns+=(${(s: :)not_tags_opts[i]})
+  done
+  for ((i=2; i <= $#not_all_tags_opts; i+=2)); do
+    not_all_patterns+=(${(s: :)not_all_tags_opts[i]})
   done
 
   # Process positional arguments
@@ -45,6 +50,7 @@ internal_files() {
   require_parameter index_mode_opt 'array*'
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
+  require_parameter not_all_patterns 'array*'
   require_parameter paths 'array*'
 
   # No-index mode
@@ -75,6 +81,7 @@ internal_files() {
 internal_files_in_paths() {
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
+  require_parameter not_all_patterns 'array*'
 
   local paths
   paths=($@)
@@ -102,6 +109,7 @@ internal_files_in_paths() {
 internal_files_in_dir() {
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
+  require_parameter not_all_patterns 'array*'
   # optional: dont_look_up (true if defined)
 
   [[ $# -eq 1 ]] || fail "Expected 1 argument, got $#"

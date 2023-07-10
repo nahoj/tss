@@ -1,6 +1,7 @@
 tss_test() {
-  local help name_only_opt tags_opts not_tags_opts
-  zparseopts -D -E -F - -help=help {n,-name-only}=name_only_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
+  local help name_only_opt tags_opts not_tags_opts not_all_tags_opts
+  zparseopts -D -E -F - -help=help {n,-name-only}=name_only_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts \
+    -not-all-tags+:=not_all_tags_opts
 
   if [[ -n $help ]]; then
     cat <<EOF
@@ -13,6 +14,7 @@ Options:
   -n, --name-only             Test only the file's name, assume the file exists and is a taggable file
   -t, --tags <pattern...>     True only if the file has tags matching all the given patterns
   -T, --not-tags <pattern...> True only if the file doesn't have any tag matching any of the given patterns
+  --not-all-tags <pattern...> True only if at least 1 of the patterns is not matched by any of the file's tags
   --help                      Show this help message
 
 EOF
@@ -20,13 +22,16 @@ EOF
   fi
 
   # Process options
-  local -aU patterns anti_patterns
+  local -aU patterns anti_patterns not_all_patterns
   local -i i
   for ((i=2; i <= $#tags_opts; i+=2)); do
     patterns+=(${(s: :)tags_opts[i]})
   done
   for ((i=2; i <= $#not_tags_opts; i+=2)); do
     anti_patterns+=(${(s: :)not_tags_opts[i]})
+  done
+  for ((i=2; i <= $#not_all_tags_opts; i+=2)); do
+    not_all_patterns+=(${(s: :)not_all_tags_opts[i]})
   done
 
   # Process positional arguments
@@ -47,6 +52,7 @@ internal_test() {
   require_parameter name_only_opt 'array*' || return 2
   require_parameter patterns 'array*' || return 2
   require_parameter anti_patterns 'array*' || return 2
+  require_parameter not_all_patterns 'array*' || return 2
   require_parameter file_path 'scalar*' || return 2
 
   local tags pattern tag
@@ -73,4 +79,22 @@ internal_test() {
     # pattern OK
   done
   # file OK
+
+  if [[ $#not_all_patterns -gt 0 ]]; then
+    local -i found_unmatched_pattern=1
+    for pattern in $not_all_patterns; do
+      for tag in $tags; do
+        if [[ $tag = ${~pattern} ]]; then
+          continue 2
+        fi
+      done
+      found_unmatched_pattern=0
+      break
+    done
+    if [[ $found_unmatched_pattern -eq 1 ]]; then
+      return 1
+    fi
+  fi
+
+  return 0
 }

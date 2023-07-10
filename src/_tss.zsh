@@ -46,43 +46,36 @@ _tss_add() {
       ;;
 
     files)
-      local -aU tags
-      tags=(${(s: :)${(Q)line[1]}})
+      local -aU tags=(${(s: :)${(Q)line[1]}})
+      local patterns=(${(b)tags[@]})
 
-      if [[ $#tags -eq 1 ]]; then
-        # Aim to offer files that don't have the tag
-        local location
-        if location=$(tss location of .); then
-          local -a files
-          files=("${(@f)"$( \
-            tss location index files "$location" --path-starts-with "${(Q)line[$CURRENT]}" -T "${(b)tags[1]}" \
-            )"}")
-          _multi_parts / files
-
-        else
-          # Don't browse recursively, just read $line[$CURRENT]'s dir
-          local dirs
-          dirs=(${(Q)line[$CURRENT]}*(/N))
-          if [[ $#dirs -eq 0 ]]; then
-            # Offer filtered files
-            local all_regular_files
-            all_regular_files=(${(Q)line[$CURRENT]}*(.N))
-            if [[ $#all_regular_files -ne 0 ]]; then
-              local files
-              files=($(tss files -T "${(b)tags[1]}" $all_regular_files))
-              local values
-              values=("${(@f)$(escape_value "${(F)files}")}")
-              _values "file" "$values[@]"
-            fi
-          else
-            # Give up on filtering
-            _files -g '*(.)'
-          fi
-        fi
+      # Aim to offer files that don't have the tag
+      local location
+      if location=$(tss location of .); then
+        local -a files
+        files=("${(@f)"$( \
+          tss location index files "$location" --path-starts-with "${(Q)line[$CURRENT]}" \
+            --not-all-tags "${(j: :)patterns}" \
+          )"}")
+        _multi_parts / files
 
       else
-        # Too complex to filter
-        _files -g '*(.)'
+        # Don't browse recursively, just read $line[$CURRENT]'s dir
+        local dirs=(${(Q)line[$CURRENT]}*(/N))
+        if [[ $#dirs -eq 0 ]]; then
+          # Offer filtered files
+          local all_regular_files=(${(Q)line[$CURRENT]}*(.N))
+          if [[ $#all_regular_files -ne 0 ]]; then
+            local files
+            files=($(tss files --not-all-tags "${(j: :)patterns}" $all_regular_files))
+            local values
+            values=("${(@f)$(escape_value "${(F)files}")}")
+            _values "file" "$values[@]"
+          fi
+        else
+          # Give up on filtering
+          _files -g '*(.)'
+        fi
       fi
       ;;
   esac
@@ -155,6 +148,7 @@ _tss_remove() {
 _tss_files() {
   _arguments -s -C : \
              '--help[show help]' \
+             "*--not-all-tags[Don't list files with ags matching all of the given patterns]:patterns:->tags" \
              '*'{-T,--not-tags}"[Don't list files with any tag matching any of the given patterns]:patterns:->tags" \
              '*'{-t,--tags}'[List files with tags matching all of the given patterns]:patterns:->tags' \
              '*:file:_files' \
@@ -170,9 +164,12 @@ _tss_files() {
   esac
 }
 
-_tss_file_location() {
-  _arguments -s \
-             '1:file:_files'
+_tss_filter() {
+  _arguments -s -C : \
+             '--help[show help]' \
+             "*--not-all-tags[Don't list files with ags matching all of the given patterns]:patterns:->tags" \
+             '*'{-T,--not-tags}"[Don't list files with any tag matching any of the given patterns]:patterns:->tags" \
+             '*'{-t,--tags}'[List files with tags matching all of the given patterns]:patterns:->tags' \
 }
 
 _tss_tags() {

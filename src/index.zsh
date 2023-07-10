@@ -156,17 +156,21 @@ tss_location_index_build() {
 }
 
 tss_location_index_files() {
-  local -a path_opt tags_opts not_tags_opts
-  zparseopts -D -E -F - {-path,-path-starts-with}:=path_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
+  local -a path_opt tags_opts not_tags_opts not_all_tags_opts
+  zparseopts -D -E -F - {-path,-path-starts-with}:=path_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts \
+    -not-all-tags+:=not_all_tags_opts
 
   # Process options
-  local -aU patterns anti_patterns
+  local -aU patterns anti_patterns not_all_patterns
   local -i i
   for ((i=2; i <= $#tags_opts; i+=2)); do
     patterns+=(${(s: :)tags_opts[i]})
   done
   for ((i=2; i <= $#not_tags_opts; i+=2)); do
     anti_patterns+=(${(s: :)not_tags_opts[i]})
+  done
+  for ((i=2; i <= $#not_all_tags_opts; i+=2)); do
+    not_all_patterns+=(${(s: :)not_all_tags_opts[i]})
   done
 
   # Process positional arguments
@@ -199,6 +203,7 @@ internal_location_index_files_path() {
 
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
+  require_parameter not_all_patterns 'array*'
 
   if [[ -d $pathh ]]; then
     local -r dir_path=$pathh
@@ -221,6 +226,7 @@ internal_location_index_files_path_starts_with() {
 
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
+  require_parameter not_all_patterns 'array*'
 
   local file_name_prefix=${path_starts_with##*/}             # $path_starts_with after last / excluded
   local dir_path=${${path_starts_with%$file_name_prefix}:-.} # $path_starts_with up to last / included, or .
@@ -236,6 +242,7 @@ internal_location_index_files_dir_and_file_name_prefix() {
 
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
+  require_parameter not_all_patterns 'array*'
 
   local abs_location=${location:a}
   local abs_dir_path=${dir_path:a}

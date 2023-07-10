@@ -1,6 +1,7 @@
 tss_filter() {
-  local -a help name_only_opt tags_opts not_tags_opts
-  zparseopts -D -E -F - -help=help {n,-name-only}=name_only_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts
+  local -a help name_only_opt tags_opts not_tags_opts not_all_tags_opts
+  zparseopts -D -E -F - -help=help {n,-name-only}=name_only_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts \
+    -not-all-tags+:=not_all_tags_opts
 
   if [[ -n $help ]]; then
     cat <<EOF
@@ -11,6 +12,7 @@ Options:
   -n, --name-only             Filter files based on their name, assume they exist and are taggable files
   -t, --tags <pattern...>     Only output files that have tags matching all the given patterns
   -T, --not-tags <pattern...> Don't output files that have any tag matching any of the given patterns
+  --not-all-tags <pattern...> Don't output files that have tags matching all of the given patterns
   --help                      Show this help message
 
 EOF
@@ -18,13 +20,16 @@ EOF
   fi
 
   # Process options
-  local -aU patterns anti_patterns
+  local -aU patterns anti_patterns not_all_patterns
   local -i i
   for ((i=2; i <= $#tags_opts; i+=2)); do
     patterns+=(${(s: :)tags_opts[i]})
   done
   for ((i=2; i <= $#not_tags_opts; i+=2)); do
     anti_patterns+=(${(s: :)not_tags_opts[i]})
+  done
+  for ((i=2; i <= $#not_all_tags_opts; i+=2)); do
+    not_all_patterns+=(${(s: :)not_all_tags_opts[i]})
   done
 
   # Reject positional arguments
@@ -41,8 +46,9 @@ EOF
 internal_filter() {
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
+  require_parameter not_all_patterns 'array*'
 
-  if [[ $#patterns -eq 0 && $#anti_patterns -eq 0 ]]; then
+  if [[ $#patterns -eq 0 && $#anti_patterns -eq 0 && $#not_all_patterns -eq 0 ]]; then
     cat
     return 0
   fi
