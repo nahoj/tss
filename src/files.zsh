@@ -50,13 +50,13 @@ internal_files() {
   # No-index mode
   if [[ -n $index_mode_opt && ( $index_mode_opt[1] = '-I' || $index_mode_opt[1] = '--no-index' ) ]]; then
     local pathh file_path
-    for pathh in "${paths[@]}"; do
-      require_exists $pathh
+    for pathh in $paths; do
+      require_exists "$pathh"
       if [[ -f $pathh ]]; then
         print -r -- $pathh
       elif [[ -d $pathh ]]; then
-        for file_path in $pathh/**/*(.N); do
-          print -r -- $file_path
+        for file_path in "$pathh"/**/*(.N); do
+          print -r -- "$file_path"
         done
       fi
 
@@ -67,7 +67,7 @@ internal_files() {
     } || return $?
 
   else
-    internal_files_in_paths "$paths[@]"
+    internal_files_in_paths $paths
   fi
 }
 
@@ -77,21 +77,21 @@ internal_files_in_paths() {
   require_parameter anti_patterns 'array*'
 
   local paths
-  paths=("$@")
+  paths=($@)
 
   local pathh file_path
   local -ar name_only_opt=(-n)
-  for pathh in "${paths[@]}"; do
-    require_exists $pathh
+  for pathh in $paths; do
+    require_exists "$pathh"
 
     if [[ -f $pathh ]]; then
       file_path=$pathh
       if internal_test; then
-        print -r -- $pathh
+        print -r -- "$pathh"
       fi
 
     elif [[ -d $pathh ]]; then
-      internal_files_in_dir $pathh
+      internal_files_in_dir "$pathh"
 
     # Not a regular file = don't print
     fi
@@ -116,7 +116,7 @@ internal_files_in_dir() {
         location=.
     fi
   else
-    location=$(tss_location_of $pathh) || true
+    location=$(tss_location_of "$pathh") || true
   fi
 
   # If we found a location
@@ -125,6 +125,6 @@ internal_files_in_dir() {
 
   else
     local -r dont_look_up
-    internal_files_in_paths $pathh/*(N)
+    internal_files_in_paths "$pathh"/*(N)
   fi
 }

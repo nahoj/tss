@@ -33,11 +33,11 @@ _tss_add() {
       local location
       local -aU tags
       if location=$(tss location of .); then
-        tags=($(tss location index all-tags $location))
+        tags=($(tss location index all-tags "$location"))
       else
         # All tags in the current directory
         for f in *(.N); do
-          tags+=($(tss tags $f))
+          tags+=($(tss tags "$f"))
         done
       fi
       if [[ $#tags -ne 0 ]]; then
@@ -55,7 +55,7 @@ _tss_add() {
         if location=$(tss location of .); then
           local -a files
           files=("${(@f)"$( \
-            tss location index files $location --path-starts-with "${(Q)line[$CURRENT]}" -T ${(b)tags[1]} \
+            tss location index files "$location" --path-starts-with "${(Q)line[$CURRENT]}" -T "${(b)tags[1]}" \
             )"}")
           _multi_parts / files
 
@@ -69,7 +69,7 @@ _tss_add() {
             all_regular_files=(${(Q)line[$CURRENT]}*(.N))
             if [[ $#all_regular_files -ne 0 ]]; then
               local files
-              files=($(tss files -T ${(b)tags[1]} "$all_regular_files[@]"))
+              files=($(tss files -T "${(b)tags[1]}" $all_regular_files))
               local values
               values=("${(@f)$(escape_value "${(F)files}")}")
               _values "file" "$values[@]"
@@ -114,11 +114,11 @@ _tss_remove() {
       local location
       local -aU tags
       if location=$(tss location of .); then
-        tags=($(tss location index all-tags $location))
+        tags=($(tss location index all-tags "$location"))
       else
         # All tags in the current directory
         for f in *(.N); do
-          tags+=($(tss tags $f))
+          tags+=($(tss tags "$f"))
         done
       fi
       if [[ $#tags -ne 0 ]]; then
@@ -136,12 +136,12 @@ _tss_remove() {
       if location=$(tss location of .); then
         local -a files
         files=("${(@f)"$( \
-          tss location index files $location --path-starts-with "${(Q)line[$CURRENT]}" -t $filter_pattern \
+          tss location index files "$location" --path-starts-with "${(Q)line[$CURRENT]}" -t "$filter_pattern" \
           )"}")
         _multi_parts / files
 
       else
-        _files -g "$(tss util file-with-tag-pattern $filter_pattern)"
+        _files -g "$(tss util file-with-tag-pattern "$filter_pattern")"
       fi
       ;;
   esac
@@ -163,7 +163,7 @@ _tss_files() {
     tags)
       local dir tags
       dir=${$(tss location of .):-.} || return $?
-      tags=($(tss tags $dir)) || return $?
+      tags=($(tss tags "$dir")) || return $?
       _values -s ' ' "tag" \
               "${tags[@]}" \
       ;;

@@ -61,13 +61,11 @@ EOF
 }
 
 internal_file_tags() {
-  unsetopt warn_create_global warn_nested_var
-
   require_parameter name_only_opt 'array*'
   require_parameter file_path 'scalar*'
 
   if [[ -z $name_only_opt ]]; then
-    require_exists $file_path
+    require_exists "$file_path"
     if [[ ! -f $file_path ]]; then
       return 0
     fi
@@ -75,6 +73,7 @@ internal_file_tags() {
     fail 'Invalid path: ""'
   fi
 
+  local -a match mbegin mend
   [[ ${file_path:t} =~ $file_name_maybe_tag_group_regex ]]
-  print -r -- $match[3]
+  print -r -- "$match[3]"
 }

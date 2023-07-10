@@ -1,10 +1,9 @@
 clean_one_file() {
-  unsetopt warn_create_global warn_nested_var
-
   local file_path file_name
   file_path=$1
-  require_exists_taggable $file_path
+  require_exists_taggable "$file_path"
   file_name=${file_path:t}
+  local -a match mbegin mend
   if ! [[ $file_name =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
     fail "Ignoring file with ill-formed name: ${(qqq)file_path}"
   fi
@@ -14,8 +13,8 @@ clean_one_file() {
   if [[ $new_file_name != $file_name ]]; then
     local new_file_path
     new_file_path="${file_path:h}/$new_file_name"
-    require_does_not_exist $new_file_path
-    mv $file_path $new_file_path
+    require_does_not_exist "$new_file_path"
+    mv "$file_path" "$new_file_path"
   fi
 }
 
@@ -23,29 +22,28 @@ clean_one_file() {
 tss_clean() {
   local file_path
   local -i statuss=0
-  for file_path in "$@"; do
-    clean_one_file $file_path || statuss=$?
+  for file_path in $@; do
+    clean_one_file "$file_path" || statuss=$?
   done
   return $statuss
 }
 
 set_file_tags() {
-  unsetopt warn_create_global warn_nested_var
-
   local file_path tags
   file_path=$1
-  require_exists_taggable $file_path
+  require_exists_taggable "$file_path"
   shift
   tags=($@)
 
   # if tags empty, clean file
   if [[ $#tags -eq 0 ]]; then
-    clean_one_file $file_path
+    clean_one_file "$file_path"
 
   else
     local file_name
     file_name=${file_path:t}
 
+    local -a match mbegin mend
     if ! [[ "$file_name" =~ $file_name_maybe_tag_group_regex ]]; then
       fail "Invalid file name: ${(qqq)file_path}"
     fi
@@ -67,8 +65,8 @@ set_file_tags() {
     if [[ $new_file_name != $file_name ]]; then
       local new_file_path
       new_file_path="${file_path:h}/$new_file_name"
-      require_does_not_exist $new_file_path
-      mv $file_path $new_file_path
+      require_does_not_exist "$new_file_path"
+      mv "$file_path" "$new_file_path"
     fi
   fi
 }
@@ -83,7 +81,7 @@ tag_in_patterns() {
   fi
 
   local pattern
-  for pattern in "${patterns[@]}"; do
+  for pattern in "$patterns[@]"; do
     if [[ $tag = ${~pattern} ]]; then
       return 0
     fi
@@ -98,30 +96,30 @@ internal_add_remove() {
 
   local file_path old_tags new_tags tag
   local -ar name_only_opt=(-n)
-  for file_path in "${file_paths[@]}"; do
-    require_well_formed $file_path
-    require_exists_taggable $file_path
+  for file_path in $file_paths; do
+    require_well_formed "$file_path"
+    require_exists_taggable "$file_path"
 
     old_tags=(${(s: :)$(internal_file_tags)})
     if [[ $#remove_patterns -gt 0 ]]; then
       new_tags=()
-      for tag in "${old_tags[@]}"; do
-        if ! tag_in_patterns $tag $remove_patterns; then
-          new_tags+=($tag)
+      for tag in $old_tags; do
+        if ! tag_in_patterns "$tag" $remove_patterns; then
+          new_tags+=("$tag")
         fi
       done
     else
       new_tags=($old_tags)
     fi
 
-    for tag in "${add_tags[@]}"; do
+    for tag in $add_tags; do
       if ! ((new_tags[(Ie)$tag])); then
-        new_tags+=($tag)
+        new_tags+=("$tag")
       fi
     done
 
     if ! arrayeq new_tags old_tags; then
-      set_file_tags $file_path $new_tags
+      set_file_tags "$file_path" $new_tags
     fi
   done
 }
@@ -130,11 +128,11 @@ internal_add_remove() {
 tss_add() {
   local add_tags tag file_paths
   add_tags=(${(s: :)1})
-  for tag in "${add_tags[@]}"; do
-    require_tag_valid $tag
+  for tag in $add_tags; do
+    require_tag_valid "$tag"
   done
   shift
-  file_paths=("$@")
+  file_paths=($@)
 
   local remove_patterns=()
   internal_add_remove
@@ -149,7 +147,7 @@ tss_remove() {
     return 1
   fi
   shift
-  file_paths=("$@")
+  file_paths=($@)
 
   local add_tags=()
   internal_add_remove

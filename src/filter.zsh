@@ -51,7 +51,7 @@ internal_filter() {
   local file_path
   while IFS= read -r file_path; do
     if internal_test; then
-      print -r -- $file_path
+      print -r -- "$file_path"
     fi
   done
 }

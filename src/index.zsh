@@ -3,7 +3,7 @@ tss_location_index_all_tags() {
   local pathh
   if [[ -n $1 ]]; then
     pathh=$1
-    require_exists $pathh
+    require_exists "$pathh"
   else
     pathh=.
   fi
@@ -13,7 +13,7 @@ tss_location_index_all_tags() {
   index="$location/.ts/tsi.json"
 
   # Get sorted, unique tags
-  jq -r '[.[].tags | .[].title] | unique | .[]' $index
+  jq -r '[.[].tags | .[].title] | unique | .[]' "$index"
 }
 
 print_json_string() {
@@ -60,8 +60,6 @@ print_json_tag_object() {
 }
 
 internal_print_json_file_object() {
-  unsetopt warn_create_global warn_nested_var
-
   require_parameter typ 'scalar*'
   require_parameter mtime 'scalar*'
   require_parameter size_bytes 'scalar*'
@@ -75,7 +73,7 @@ internal_print_json_file_object() {
   print -n $(uuidgen)
 
   print -n '",\n    "name": '
-  print_json_string $file_name
+  print_json_string "$file_name"
 
   print -n ',\n    "isFile": '
   if [[ $typ = 'f' ]]; then
@@ -86,6 +84,7 @@ internal_print_json_file_object() {
 
   print -n ',\n    "extension": '
   local file_name_without_tag_group extension
+  local -a match mbegin mend
   [[ $file_name =~ $file_name_maybe_tag_group_regex ]]
   file_name_without_tag_group="$match[1]$match[4]"
   extension=${file_name_without_tag_group:e}
@@ -100,27 +99,27 @@ internal_print_json_file_object() {
       if (( i++ > 0 )); then
         print -rn ', '
       fi
-      print_json_tag_object $tag
+      print_json_tag_object "$tag"
     done
   fi
 
   print -n '],\n    "size": '
-  print -n $size_bytes
+  print -n "$size_bytes"
 
   print -n ',\n    "lmdt": '
   [[ $mtime =~ '^(-?[0-9]+)\.([0-9]{3})[0-9]*$' ]]
-  print -n $match[1]
-  print -n $match[2]
+  print -n "$match[1]"
+  print -n "$match[2]"
 
   print -n ',\n    "path": '
-  print_json_string $file_path
+  print_json_string "$file_path"
   print -n '\n  }'
 }
 
 tss_location_index_build() {
   local location
   location=${1:-.}
-  require_is_location $location
+  require_is_location "$location"
 
   do_build_index() {
     print -r "Building index $location/.ts/tsi.json"
@@ -153,7 +152,7 @@ tss_location_index_build() {
 
     mv $new_index $index
   }
-  with_lock_file "$location/.ts/tsi.json" with_cd $location do_build_index
+  with_lock_file "$location/.ts/tsi.json" with_cd "$location" do_build_index
 }
 
 tss_location_index_files() {
@@ -196,7 +195,7 @@ tss_location_index_files() {
 internal_location_index_files_path() {
   require_parameter location 'scalar*'
   require_parameter pathh 'scalar*'
-  require_exists $pathh
+  require_exists "$pathh"
 
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
@@ -211,7 +210,7 @@ internal_location_index_files_path() {
     local file_path=$pathh
     local -ar name_only_opt=()
     if [[ ${file_path:a} = ${location:a}/* ]] && internal_test; then
-      print -r -- $file_path
+      print -r -- "$file_path"
     fi
   fi
 }
@@ -230,7 +229,7 @@ internal_location_index_files_path_starts_with() {
 
 internal_location_index_files_dir_and_file_name_prefix() {
   require_parameter location 'scalar*'
-  require_is_location $location
+  require_is_location "$location"
 
   require_parameter dir_path 'scalar*'
   require_parameter file_name_prefix 'scalar*'
@@ -270,16 +269,16 @@ internal_location_index_files_dir_and_file_name_prefix() {
 
   local condition='.isFile'
   if [[ -n $index_prefix ]]; then
-    condition+=' and (.path | startswith('$(print_json_string $index_prefix)'))'
+    condition+=' and (.path | startswith('$(print_json_string "$index_prefix")'))'
   fi
 
   local index="$location/.ts/tsi.json"
-  jq -r 'map(select('$condition') | .path) | .[]' $index | {
+  jq -r 'map(select('$condition') | .path) | .[]' "$index" | {
 
     local file_path
     while IFS= read -r file_path; do
-      print -rn -- $output_prefix
-      print -r -- ${file_path:$offset}
+      print -rn -- "$output_prefix"
+      print -r -- "${file_path:$offset}"
     done
 
   } | {

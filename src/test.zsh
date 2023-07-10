@@ -52,8 +52,8 @@ internal_test() {
   local tags pattern tag
   tags=(${(s: :)$(internal_file_tags)}) || return 2
 
-  for pattern in "${patterns[@]}"; do
-    for tag in "${tags[@]}"; do
+  for pattern in $patterns; do
+    for tag in $tags; do
       if [[ $tag = ${~pattern} ]]; then
         # pattern OK
         continue 2
@@ -63,8 +63,8 @@ internal_test() {
     return 1
   done
 
-  for pattern in "${anti_patterns[@]}"; do
-    for tag in "${tags[@]}"; do
+  for pattern in $anti_patterns; do
+    for tag in $tags; do
       if [[ $tag = ${~pattern} ]]; then
         # file KO
         return 1

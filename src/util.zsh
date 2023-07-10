@@ -71,7 +71,7 @@ with_cd() {
   {
     $@
   } always {
-    cd $return_dir
+    cd "$return_dir"
   }
 }
 
@@ -87,11 +87,11 @@ with_lock_file() {
   fi
 
   # FIXME doesn't remove $lock_file in case of ^C
-  touch $lock_file
+  touch "$lock_file"
   {
-    $@
+    "$@"
   } always {
-    rm -f $lock_file
+    rm -f "$lock_file"
   }
 }
 
@@ -131,7 +131,7 @@ require_exists_taggable() {
   local file_path
   file_path=$1
 
-  require_exists $file_path
+  require_exists "$file_path"
 
   if [[ ! -f $file_path ]]; then
     failk 2 "Not a regular file: ${(qqq)file_path}"
@@ -139,11 +139,10 @@ require_exists_taggable() {
 }
 
 require_well_formed() {
-  unsetopt warn_create_global warn_nested_var
-
   local file_path
   file_path=$1
 
+  local -a match mbegin mend
   if [[ ! $file_path =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
     failk 2 "Ill-formed file name: ${(qqq)file_path}"
   fi
@@ -176,7 +175,7 @@ tss_util() {
   local subcommand
   subcommand=$1
   shift
-  case "$subcommand" in
+  case $subcommand in
     file-with-tag-pattern)
       tss_util_file_with_tag_pattern "$@"
       ;;

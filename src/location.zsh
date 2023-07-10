@@ -12,15 +12,15 @@ tss_location_all_tags() {
   pathh=${1:-.}
 
   local location index
-  location=$(tss_location_of $pathh)
+  location=$(tss_location_of "$pathh")
   index="$location/.ts/tsi.json"
 
   # if index is > 20 minutes old, refresh it
-  if [[ ! -f $index || $(zstat +mtime $index) -lt $(($(date +%s) - 1200)) ]]; then
-    tss_location_index_build $location
+  if [[ ! -f $index || $(zstat +mtime "$index") -lt $(($(date +%s) - 1200)) ]]; then
+    tss_location_index_build "$location"
   fi
 
-  tss_location_index_all_tags $location
+  tss_location_index_all_tags "$location"
 }
 
 # Return the given dir if it is a location, or its closest ancestor that is a location,
@@ -30,12 +30,12 @@ tss_location_of_dir_unsafe() {
   dir=$1
 
   if [[ -f "$dir/.ts/tsi.json" ]]; then
-    print -r -- $dir
+    print -r -- "$dir"
   else
     if [[ $dir == "/" ]]; then
       return 1
     else
-      tss_location_of_dir_unsafe ${dir:h}
+      tss_location_of_dir_unsafe "${dir:h}"
     fi
   fi
 }
@@ -43,7 +43,7 @@ tss_location_of_dir_unsafe() {
 tss_location_of() {
   local pathh
   pathh=$1
-  require_exists $pathh
+  require_exists "$pathh"
 
   local abs_dir_path
   if [[ -d $pathh ]]; then
@@ -51,7 +51,7 @@ tss_location_of() {
   else
     abs_dir_path=${pathh:a:h}
   fi
-  tss_location_of_dir_unsafe $abs_dir_path
+  tss_location_of_dir_unsafe "$abs_dir_path"
 }
 
 tss_location() {
