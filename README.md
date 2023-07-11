@@ -26,7 +26,7 @@ $ find | tss filter -t '(alps|pyrenees)'
 
 A very simple, powerful but zero-commitment concept:
 
-1. By now you understand how you could tag and search your files with tools you already have: your file manager, basic commands, `vidir`, etc. Feel free to try it by yourself and come back in a month if you like it.
+1. By now you understand how you could tag and search your files with tools you already have: your file manager and desktop search, basic commands, `vidir`, etc. Feel free to try it by yourself and come back in a month if you like it.
 2. Install `tss` (or TagSpaces for a graphical tool) and you get more efficient and powerful actions and queries.
 3. **(still under development)** Define a *location* (root directory where your tagged files are) and queries/completion get faster.
 4. Uninstall at any time without any loss of data.
@@ -50,3 +50,8 @@ To update:
 git pull
 make install
 ```
+
+## FAQ
+### Relation to TagSpaces
+
+tss intends to be compatible with TagSpaces, but it does not require TagSpaces to run and is not affiliated with it in any way.
