@@ -5,16 +5,16 @@ tss_tags() {
   if [[ -n $help ]]; then
     cat <<EOF
 
-Usage:          tss tags [options] [--] <path>...
-(in particular) tss tags [options] [--] <file>
+Usage:          tss tags [<options>] [--] <path>...
+(in particular) tss tags [<options>] [--] <file>
 
 Print all tags found on files in the given paths and/or files listed on stdin.
 
 Options:
-  -n, --name-only Use only the given file names; assume each path is a taggable
-                  file. In particular, this precludes browsing directories.
-  --stdin         Read file paths from stdin in addition to browsing paths given as arguments (if any)
-  --help          Show this help message
+  -n, --name-only       Use only the given file names; assume each path is a taggable file.
+                        In particular, this precludes browsing directories.
+  --stdin               $label_tags_stdin_descr
+  --help                $label_generic_help_help_descr
 
 EOF
     return 0

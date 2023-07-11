@@ -132,10 +132,11 @@ _tss_remove() {
 
 _tss_files() {
   _arguments -s -C : \
-             '--help[show help]' \
-             "*--not-all-tags[Don't list files with ags matching all of the given patterns]:patterns:->tags" \
-             '*'{-T,--not-tags}"[Don't list files with any tag matching any of the given patterns]:patterns:->tags" \
-             '*'{-t,--tags}'[List files with tags matching all of the given patterns]:patterns:->tags' \
+             "--help[$(tss label generic_completion_help_descr)]" \
+             {-I,--no-index}"[$(tss label files_no_index_descr)]" \
+             "--not-all-tags[$(tss label files_not_all_tags_descr)]:patterns:->tags" \
+             '*'{-T,--not-tags}"[$(tss label files_not_tags_descr)]:patterns:->tags" \
+             '*'{-t,--tags}"[$(tss label files_tags_descr)]:patterns:->tags" \
              '*:file:_files' \
 
   case "$state" in
@@ -151,19 +152,28 @@ _tss_files() {
 
 _tss_filter() {
   _arguments -s -C : \
-             '--help[show help]' \
-             "*--not-all-tags[Don't list files with ags matching all of the given patterns]:patterns:->tags" \
-             '*'{-T,--not-tags}"[Don't list files with any tag matching any of the given patterns]:patterns:->tags" \
-             '*'{-t,--tags}'[List files with tags matching all of the given patterns]:patterns:->tags' \
+             "--help[$(tss label generic_completion_help_descr)]" \
+             {-n,--name-only}"[$(tss label filter_name_only_descr)]" \
+             "--not-all-tags[$(tss label filter_not_all_tags_descr)]:patterns:->tags" \
+             '*'{-T,--not-tags}"[$(tss label filter_not_tags_descr)]:patterns:->tags" \
+             '*'{-t,--tags}"[$(tss label filter_tags_descr)]:patterns:->tags" \
 }
 
 _tss_tags() {
-  _arguments -s \
+  _arguments -s -C : \
+             "--help[$(tss label generic_completion_help_descr)]" \
+             {-n,--name-only}"[$(tss label tags_name_only_descr)]" \
+             "--stdin[$(tss label tags_stdin_descr)]" \
              '1:file:_files'
 }
 
 _tss_test() {
-  _arguments -s \
+  _arguments -s -C : \
+             "--help[$(tss label generic_completion_help_descr)]" \
+             {-n,--name-only}"[$(tss label test_name_only_descr)]" \
+             "--not-all-tags[$(tss label test_not_all_tags_descr)]:patterns:->tags" \
+             '*'{-T,--not-tags}"[$(tss label test_not_tags_descr)]:patterns:->tags" \
+             '*'{-t,--tags}"[$(tss label test_tags_descr)]:patterns:->tags" \
              '1:file:_files'
 }
 
@@ -172,7 +182,7 @@ _tss_test() {
 # Location and index
 ####################
 
-_tss_location_index_all_tags() {
+_tss_location_index_tags() {
   _arguments -s \
              '1:location:_files'
 }
@@ -191,16 +201,16 @@ _tss_location_index() {
   case "$state" in
     cmds)
       _values "tss-location-index command" \
-              "all-tags[List all tags that appear in the index]" \
               "build[Build index]" \
+              "tags[List all tags that appear in the index]" \
       ;;
     args)
       case $line[1] in
-        all-tags)
-          _tss_location_index_all_tags
-          ;;
         build)
           _tss_location_index_build
+          ;;
+        tags)
+          _tss_location_index_tags
           ;;
       esac
       ;;
@@ -267,16 +277,16 @@ _tss() {
   case "$state" in
     cmds)
       _values "tss command" \
-              "add[Add tags to one or more files.]" \
-              "clean[Remove the whole tag group from one or more files.]" \
-              "files[List files]" \
-              "filter[Filter paths read on stdin]" \
-              "location[TODO descr]" \
-              "query[Alias of 'tss files']" \
-              "remove[Remove tags from one or more files.]" \
-              "tags[List tags]" \
-              "test[Tests whether a file meets some criteria]" \
-              "util[Utils]" \
+              "add[$(tss label add_descr)]" \
+              "clean[$(tss label clean_descr)]" \
+              "files[$(tss label files_descr)]" \
+              "filter[$(tss label filter_descr)]" \
+              "location[$(tss label location_descr)]" \
+              "query[$(tss label query_descr)]" \
+              "remove[$(tss label remove_descr)]" \
+              "tags[$(tss label tags_descr)]" \
+              "test[$(tss label test_descr)]" \
+              "util[$(tss label util_descr)]" \
       ;;
     args)
       case $line[1] in

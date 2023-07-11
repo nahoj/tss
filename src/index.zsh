@@ -1,15 +1,14 @@
 
-tss_location_index_all_tags() {
-  local pathh
+tss_location_index_tags() {
+  local location
   if [[ -n $1 ]]; then
-    pathh=$1
-    require_exists "$pathh"
+    location=$1
+    require_is_location "$location"
   else
-    pathh=.
+    location=$(tss_location_of_dir_unsafe ${.:a}) || fail "Not in a location"
   fi
 
-  local location index
-  location=$(tss_location_of_dir_unsafe .) || fail "Not in a location"
+  local index
   index="$location/.ts/tsi.json"
 
   # Get sorted, unique tags
@@ -300,14 +299,14 @@ tss_location_index() {
   subcommand=$1
   shift
   case $subcommand in
-    all-tags)
-      tss_location_index_all_tags "$@"
+    build)
+      tss_location_index_build "$@"
       ;;
     files)
       tss_location_index_files "$@"
       ;;
-    build)
-      tss_location_index_build "$@"
+    tags)
+      tss_location_index_tags "$@"
       ;;
     *)
       fail "Unknown subcommand $subcommand"

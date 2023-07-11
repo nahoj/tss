@@ -18,8 +18,27 @@ clean_one_file() {
   fi
 }
 
-# remove tag group from the given files
 tss_clean() {
+  local help
+  zparseopts -D -E -F - -help=help
+
+  if [[ -n $help ]]; then
+    cat <<EOF
+
+Usage: tss clean <file>...
+
+Remove the whole tag group from the given files.
+
+EOF
+    return 0
+  fi
+
+  if [[ ${1:-} = -- ]]; then
+    shift
+  fi
+  if [[ $# -eq 0 ]]; then
+    fail "At least one argument expected"
+  fi
   local file_path
   local -i statuss=0
   for file_path in $@; do
@@ -124,8 +143,27 @@ internal_add_remove() {
   done
 }
 
-# Add one or more tags to one or more files if not already present
 tss_add() {
+  local help
+  zparseopts -D -E -F - -help=help
+
+  if [[ -n $help ]]; then
+    cat <<EOF
+
+Usage: tss add '<tag> ...' <file>...
+
+Add one or more tags to one or more files if not already present.
+
+EOF
+    return 0
+  fi
+
+  if [[ ${1:-} = -- ]]; then
+    shift
+  fi
+  if [[ $# -lt 2 ]]; then
+    fail "At least 2 argument expected"
+  fi
   local add_tags tag file_paths
   add_tags=(${(s: :)1})
   for tag in $add_tags; do
@@ -139,6 +177,26 @@ tss_add() {
 }
 
 tss_remove() {
+  local help
+  zparseopts -D -E -F - -help=help
+
+  if [[ -n $help ]]; then
+    cat <<EOF
+
+Usage: tss remove '<pattern> ...' <file>...
+
+Remove all tags matching any of the given patterns from one or more files.
+
+EOF
+    return 0
+  fi
+
+  if [[ ${1:-} = -- ]]; then
+    shift
+  fi
+  if [[ $# -lt 2 ]]; then
+    fail "At least 2 argument expected"
+  fi
   local remove_patterns file_paths
   remove_patterns=(${(s: :)1})
   if ((remove_patterns[(Ie)*])); then

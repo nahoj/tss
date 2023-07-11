@@ -9,11 +9,11 @@ tss_files() {
 Usage: tss files [options] [--] <path>...
 
 Options:
-  -I, --no-index              Don't use any index, only use the file system
-  -t, --tags <pattern...>     Only output files that have tags matching all the given patterns
-  -T, --not-tags <pattern...> Don't output files that have any tag matching any of the given patterns
-  --not-all-tags <pattern...> Don't output files that have tags matching all of the given patterns
-  --help                      Show this help message
+  -I, --no-index                $label_files_no_index_descr
+  -t, --tags <pattern...>       $label_files_tags_descr
+  -T, --not-tags <pattern...>   $label_files_not_tags_descr
+  --not-all-tags <pattern...>   $label_files_not_all_tags_descr
+  --help                        $label_generic_help_help_descr
 
 EOF
     return 0

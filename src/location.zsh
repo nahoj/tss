@@ -7,7 +7,7 @@ require_is_location() {
   fi
 }
 
-tss_location_all_tags() {
+tss_location_tags() {
   local pathh
   pathh=${1:-.}
 
@@ -20,7 +20,7 @@ tss_location_all_tags() {
     tss_location_index_build "$location"
   fi
 
-  tss_location_index_all_tags "$location"
+  tss_location_index_tags "$location"
 }
 
 # Return the given dir if it is a location, or its closest ancestor that is a location,
@@ -59,14 +59,14 @@ tss_location() {
   subcommand=$1
   shift
   case $subcommand in
-    all-tags)
-      tss_location_all_tags "$@"
-      ;;
     index)
       tss_location_index "$@"
       ;;
     of)
       tss_location_of "$@"
+      ;;
+    tags)
+      tss_location_tags "$@"
       ;;
     *)
       log "Unknown subcommand: $subcommand"

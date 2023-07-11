@@ -6,14 +6,14 @@ tss_filter() {
   if [[ -n $help ]]; then
     cat <<EOF
 
-Usage: tss filter [options]
+Usage: tss filter [<options>]
 
 Options:
-  -n, --name-only             Filter files based on their name, assume they exist and are taggable files
-  -t, --tags <pattern...>     Only output files that have tags matching all the given patterns
-  -T, --not-tags <pattern...> Don't output files that have any tag matching any of the given patterns
-  --not-all-tags <pattern...> Don't output files that have tags matching all of the given patterns
-  --help                      Show this help message
+  -n, --name-only               $label_filter_name_only_descr
+  -t, --tags <pattern...>       $label_filter_tags_descr
+  -T, --not-tags <pattern...>   $label_filter_not_tags_descr
+  --not-all-tags <pattern...>   $label_filter_not_all_tags_descr
+  --help                        $label_generic_help_help_descr
 
 EOF
     return 0

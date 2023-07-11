@@ -6,16 +6,16 @@ tss_test() {
   if [[ -n $help ]]; then
     cat <<EOF
 
-Usage: tss test [options] [--] <file>
+Usage: tss test [<options>] [--] <file>
 
 Return 0 if true, 1 if false, 2 if an error occurred.
 
 Options:
-  -n, --name-only             Test only the file's name, assume the file exists and is a taggable file
-  -t, --tags <pattern...>     True only if the file has tags matching all the given patterns
-  -T, --not-tags <pattern...> True only if the file doesn't have any tag matching any of the given patterns
-  --not-all-tags <pattern...> True only if at least 1 of the patterns is not matched by any of the file's tags
-  --help                      Show this help message
+  -n, --name-only             $label_filter_name_only_descr
+  -t, --tags <pattern...>     $label_filter_tags_descr
+  -T, --not-tags <pattern...> $label_filter_not_tags_descr
+  --not-all-tags <pattern...> $label_filter_not_all_tags_descr
+  --help                      $label_generic_help_help_descr
 
 EOF
     return 0
