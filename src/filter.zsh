@@ -55,7 +55,7 @@ internal_filter() {
 
   # Loop over stdin
   local file_path
-  while IFS= read -r file_path; do
+  while read -r file_path; do
     if internal_test; then
       print -r -- "$file_path"
     fi

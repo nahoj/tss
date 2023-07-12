@@ -247,6 +247,10 @@ _tss_location() {
   esac
 }
 
+_tss_label() {
+  _values "label" 'list' $(tss label list)
+}
+
 _tss_util() {
   local line state
 
@@ -301,6 +305,9 @@ _tss() {
           ;;
         filter)
           _tss_filter
+          ;;
+        label)
+          _tss_label
           ;;
         location)
           _tss_location

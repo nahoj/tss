@@ -282,7 +282,7 @@ internal_location_index_files_dir_and_file_name_prefix() {
   jq -r 'map(select('$condition') | .path) | .[]' "$index" | {
 
     local file_path
-    while IFS= read -r file_path; do
+    while read -r file_path; do
       print -rn -- "$output_prefix"
       print -r -- "${file_path:$offset}"
     done

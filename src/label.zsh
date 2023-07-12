@@ -34,9 +34,16 @@ local label_test_tags_descr="True only if the file has tags matching all the giv
 local label_util_descr="Utilities."
 
 tss_label() {
-  local var="label_$1"
-  if [[ ! -v $var ]]; then
-    fail "Unknown label: $1"
-  fi
-  print -r -- ${(P)var}
+  case $1 in
+    list)
+      print -rl -- ${(@o)${parameters[(I)label_*]}#label_}
+      ;;
+    *)
+      local var="label_$1"
+      if [[ ! -v $var ]]; then
+        fail "Unknown label: $1"
+      fi
+      print -r -- ${(P)var}
+      ;;
+  esac
 }

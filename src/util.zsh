@@ -169,9 +169,9 @@ tss_util_file_with_not_all_tags_pattern() {
     if [[ $p = *[[:space:]]* ]]; then
       fail "Invalid pattern (contains whitespace): ${(qqqq)p}"
     fi
-    allowed_file_patterns+=("^(*[[](($p)|($p)[[:space:]]*|*[[:space:]]($p)|*[[:space:]]($p)[[:space:]]*)[]]*)")
+    allowed_file_patterns+=("^(*[[](* |)($p)( *|)[]]*)")
   done
-  print -r "(${(j:|:)allowed_file_patterns[@]})(.)"
+  print -r "(${(j:|:)allowed_file_patterns})(.)"
 }
 
 tss_util_file_with_tag_pattern() {
@@ -184,7 +184,7 @@ tss_util_file_with_tag_pattern() {
     fail "Invalid pattern (contains whitespace); please provide a pattern for a single tag."
   fi
 
-  print -r "*[[](($p)|($p)[[:space:]]*|*[[:space:]]($p)|*[[:space:]]($p)[[:space:]]*)[]]*(.)"
+  print -r "*[[](* |)($p)( *|)[]]*(.)"
 }
 
 tss_util() {
