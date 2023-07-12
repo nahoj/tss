@@ -59,6 +59,32 @@ status() {
   print $?
 }
 
+always_with_trap_INT() {
+  local try_cmd=$1
+  local always_cmd=$2
+
+  local interrupted=
+  local trap_cmd='unsetopt warn_nested_var; interrupted=x; return 130'
+  # (the return code should never get out of the function         ^)
+  {
+    () {
+      trap "$trap_cmd" INT
+      eval "$try_cmd"
+    }
+  } always {
+    {
+      () {
+        trap "$trap_cmd" INT
+        eval "$always_cmd"
+      }
+    } always {
+      if [[ $interrupted ]]; then
+        kill -s INT "$$"
+      fi
+    }
+  }
+}
+
 with_cd() {
   local dir
   dir=$1
@@ -67,12 +93,9 @@ with_cd() {
   local return_dir
   return_dir=$PWD
 
-  cd $dir
-  {
-    $@
-  } always {
-    cd "$return_dir"
-  }
+  always_with_trap_INT \
+    "cd $dir; ${(j: :)${(q)@}}" \
+    "cd $return_dir"
 }
 
 with_lock_file() {
@@ -86,13 +109,9 @@ with_lock_file() {
     fail "File is locked: ${(qqq)file}"
   fi
 
-  # FIXME doesn't remove $lock_file in case of ^C
-  touch "$lock_file"
-  {
-    "$@"
-  } always {
-    rm -f "$lock_file"
-  }
+  always_with_trap_INT \
+    "touch $lock_file; ${(j: :)${(q)@}}" \
+    "rm -f $lock_file"
 }
 
 

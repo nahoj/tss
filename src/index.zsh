@@ -151,7 +151,9 @@ tss_location_index_build() {
 
     mv $new_index $index
   }
-  with_lock_file "$location/.ts/tsi.json" with_cd "$location" do_build_index
+  with_lock_file "$location/.ts/tsi.json" \
+    with_cd "$location" \
+      do_build_index
 }
 
 tss_location_index_files() {

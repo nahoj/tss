@@ -5,8 +5,6 @@
 # kind of meta information. As an example if you want to add the tags vacation and alps to a image named IMG-2653.jpg,
 # the application will simply rename it to IMG-2653[vacation alps].jpg."
 
-set -e
-
 setopt err_return no_unset pipe_fail
 setopt local_loops local_options local_patterns local_traps
 setopt -m 'warn*'
