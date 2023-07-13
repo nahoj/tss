@@ -20,6 +20,7 @@ EOF
   fi
 
   # Process options
+  local name_only=$name_only_opt
   local -aU patterns anti_patterns not_all_patterns
   local -i i
   for ((i=2; i <= $#tags_opts; i+=2)); do

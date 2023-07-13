@@ -22,6 +22,7 @@ EOF
   fi
 
   # Process options
+  local name_only=$name_only_opt
   local -aU patterns anti_patterns not_all_patterns
   local -i i
   for ((i=2; i <= $#tags_opts; i+=2)); do
@@ -49,7 +50,7 @@ EOF
 }
 
 internal_test() {
-  require_parameter name_only_opt 'array*' || return 2
+  require_parameter name_only 'scalar*' || return 2
   require_parameter patterns 'array*' || return 2
   require_parameter anti_patterns 'array*' || return 2
   require_parameter not_all_patterns 'array*' || return 2
@@ -81,17 +82,17 @@ internal_test() {
   # file OK
 
   if [[ $#not_all_patterns -gt 0 ]]; then
-    local -i found_unmatched_pattern=1
+    local unmatched_pattern_found=
     for pattern in $not_all_patterns; do
       for tag in $tags; do
         if [[ $tag = ${~pattern} ]]; then
           continue 2
         fi
       done
-      found_unmatched_pattern=0
+      unmatched_pattern_found=x
       break
     done
-    if [[ $found_unmatched_pattern -eq 1 ]]; then
+    if [[ $unmatched_pattern_found ]]; then
       return 1
     fi
   fi

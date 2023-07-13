@@ -67,18 +67,20 @@ internal_files() {
       fi
 
     done | {
-      local -ar name_only_opt=(-n)
+      local -r name_only=x
       internal_filter
 
     } || return $?
 
   else
+    local -r dont_look_up=
     internal_files_in_paths $paths
   fi
 }
 
 # List files in the given paths using index(es) if found
 internal_files_in_paths() {
+  require_parameter dont_look_up 'scalar*'
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
   require_parameter not_all_patterns 'array*'
@@ -87,7 +89,7 @@ internal_files_in_paths() {
   paths=($@)
 
   local pathh file_path
-  local -ar name_only_opt=(-n)
+  local -r name_only=x
   for pathh in $paths; do
     require_exists "$pathh"
 
@@ -107,10 +109,10 @@ internal_files_in_paths() {
 
 # List files under the given dir using the index if found
 internal_files_in_dir() {
+  require_parameter dont_look_up 'scalar*'
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
   require_parameter not_all_patterns 'array*'
-  # optional: dont_look_up (true if defined)
 
   [[ $# -eq 1 ]] || fail "Expected 1 argument, got $#"
   local pathh
@@ -118,7 +120,7 @@ internal_files_in_dir() {
 
   # Define location if possible
   local location
-  if [[ -v dont_look_up ]]; then
+  if [[ $dont_look_up ]]; then
     # We know no ancestor directory is a location
     if [[ -f $pathh/.ts/tsi.json ]]; then
         location=.
@@ -132,7 +134,7 @@ internal_files_in_dir() {
     internal_location_index_files_path
 
   else
-    local -r dont_look_up
+    local -r dont_look_up=x
     internal_files_in_paths "$pathh"/*(N)
   fi
 }

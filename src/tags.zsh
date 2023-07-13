@@ -20,6 +20,10 @@ EOF
     return 0
   fi
 
+  # Process options
+  local name_only=$name_only_opt
+
+  # Process positional arguments
   if [[ ${1:-} = '--' ]]; then
     shift
   fi
@@ -34,20 +38,21 @@ EOF
   local file_path
 
   if [[ $#arg_paths -gt 0 ]]; then
-    if [[ -n $name_only_opt ]]; then
+    if [[ $name_only ]]; then
+      # TODO browse dirs
       for file_path in $arg_paths; do
         tags+=(${(s: :)$(internal_file_tags)})
       done
 
     else
-      () {
-        # Always -n when using the output of tss_files
+      tss_files -- "$arg_paths[@]" | () {
+        # Always name-only when using the output of tss_files
         unsetopt warn_nested_var
-        local -ar name_only_opt=(-n)
-        tss_files -- "$arg_paths[@]" | while read -r file_path; do
+        local -r name_only=x
+        while read -r file_path; do
           tags+=(${(s: :)$(internal_file_tags)})
-        done || return $?
-      }
+        done
+      } || return $?
     fi
   fi
 
@@ -61,10 +66,10 @@ EOF
 }
 
 internal_file_tags() {
-  require_parameter name_only_opt 'array*'
+  require_parameter name_only 'scalar*'
   require_parameter file_path 'scalar*'
 
-  if [[ -z $name_only_opt ]]; then
+  if [[ ! $name_only ]]; then
     require_exists "$file_path"
     if [[ ! -f $file_path ]]; then
       return 0

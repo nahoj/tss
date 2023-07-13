@@ -280,6 +280,7 @@ _tss() {
              "*::arg:->args"
   case "$state" in
     cmds)
+      # Omits 'label' because there's no practical use for it
       _values "tss command" \
               "add[$(tss label add_descr)]" \
               "clean[$(tss label clean_descr)]" \

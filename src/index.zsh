@@ -92,7 +92,7 @@ internal_print_json_file_object() {
   print -n ',\n    "tags": ['
   if [[ $typ = 'f' ]]; then
     local tag
-    local -ar name_only_opt=(-n)
+    local -r name_only=x
     local -i i=0
     for tag in ${(s: :)$(internal_file_tags)}; do
       if (( i++ > 0 )); then
@@ -214,7 +214,7 @@ internal_location_index_files_path() {
   else
     # For single files, don't use the index at all
     local file_path=$pathh
-    local -ar name_only_opt=()
+    local -r name_only=
     if [[ ${file_path:a} = ${location:a}/* ]] && internal_test; then
       print -r -- "$file_path"
     fi
@@ -290,7 +290,7 @@ internal_location_index_files_dir_and_file_name_prefix() {
     done
 
   } | {
-    local -ar name_only_opt=(-n)
+    local -r name_only=x
     internal_filter
 
   } || return $?

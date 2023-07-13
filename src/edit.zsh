@@ -114,7 +114,7 @@ internal_add_remove() {
   require_parameter file_paths 'array*'
 
   local file_path old_tags new_tags tag
-  local -ar name_only_opt=(-n)
+  local -r name_only=x
   for file_path in $file_paths; do
     require_well_formed "$file_path"
     require_exists_taggable "$file_path"
