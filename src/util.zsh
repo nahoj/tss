@@ -115,18 +115,45 @@ with_lock_file() {
 }
 
 
-###################
-# Tag-related utils
-###################
+######################
+# Command-line parsing
+######################
+
+internal_parse_tag_opts() {
+  require_parameter tags_opts 'array*'
+  require_parameter not_tags_opts 'array*'
+  require_parameter not_all_tags_opts 'array*'
+  require_parameter patterns 'array*'
+  require_parameter anti_patterns 'array*'
+  require_parameter not_all_patterns 'array*'
+
+  unsetopt warn_nested_var
+
+  local -i i
+  for ((i=2; i <= $#tags_opts; i+=2)); do
+    patterns+=(${(s: :)tags_opts[i]})
+  done
+  for ((i=2; i <= $#not_tags_opts; i+=2)); do
+    anti_patterns+=(${(s: :)not_tags_opts[i]})
+  done
+  for ((i=2; i <= $#not_all_tags_opts; i+=2)); do
+    not_all_patterns+=(${(s: :)not_all_tags_opts[i]})
+  done
+}
+
+
+#########################
+# Misc. tag-related utils
+#########################
 
 # Regex groups are:
 # - before tag group
 # - tag group (brackets included)
 # - tag group (brackets excluded)
 # - after tag group
-file_name_maybe_tag_group_regex='^([^[]*)(\[([^]]*)\])?(.*)$'
+local file_name_maybe_tag_group_regex='^([^[]*)(\[([^]]*)\])?(.*)$'
 
-well_formed_file_name_maybe_tag_group_regex='^([^][]*)(\[([^][]*)\])?([^][]*)$'
+local well_formed_file_name_maybe_tag_group_regex='^([^][]*)(\[([^][]*)\])?([^][]*)$'
 
 require_does_not_exist() {
   local file_path

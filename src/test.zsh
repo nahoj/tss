@@ -24,16 +24,7 @@ EOF
   # Process options
   local name_only=$name_only_opt
   local -aU patterns anti_patterns not_all_patterns
-  local -i i
-  for ((i=2; i <= $#tags_opts; i+=2)); do
-    patterns+=(${(s: :)tags_opts[i]})
-  done
-  for ((i=2; i <= $#not_tags_opts; i+=2)); do
-    anti_patterns+=(${(s: :)not_tags_opts[i]})
-  done
-  for ((i=2; i <= $#not_all_tags_opts; i+=2)); do
-    not_all_patterns+=(${(s: :)not_all_tags_opts[i]})
-  done
+  internal_parse_tag_opts
 
   # Process positional arguments
   if [[ ${1:-} = '--' ]]; then

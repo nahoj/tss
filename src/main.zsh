@@ -2,7 +2,7 @@ tss() {
   local help
   zparseopts -D -F - -help=help
 
-  if [[ -n $help ]]; then
+  if [[ $# -eq 0 || -n $help ]]; then
     cat <<EOF
 
 Usage: tss <command> [--help] [<parameters>]
