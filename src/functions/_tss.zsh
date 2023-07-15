@@ -33,7 +33,7 @@ _tss_add() {
       local location
       local -aU tags
       if location=$(tss location of .); then
-        tags=($(tss location index all-tags "$location"))
+        tags=($(tss location index tags "$location"))
       else
         # All tags in the current directory
         for f in *(.N); do
@@ -70,6 +70,8 @@ _tss_add() {
 
 # tss clean takes one or more files as positional arguments
 _tss_clean() {
+  local line state
+
   _arguments -s \
              '*::file:->files'
 
@@ -156,6 +158,8 @@ _tss_files() {
 }
 
 _tss_filter() {
+  local line state
+
   _arguments -s -C : \
              "--help[$(tss label generic_completion_help_descr)]" \
              {-n,--name-only}"[$(tss label filter_name_only_descr)]" \
@@ -165,6 +169,8 @@ _tss_filter() {
 }
 
 _tss_tags() {
+  local line state
+
   _arguments -s -C : \
              "--help[$(tss label generic_completion_help_descr)]" \
              {-n,--name-only}"[$(tss label tags_name_only_descr)]" \
@@ -173,6 +179,8 @@ _tss_tags() {
 }
 
 _tss_test() {
+  local line state
+
   _arguments -s -C : \
              "--help[$(tss label generic_completion_help_descr)]" \
              {-n,--name-only}"[$(tss label test_name_only_descr)]" \
@@ -188,11 +196,15 @@ _tss_test() {
 ####################
 
 _tss_location_index_tags() {
+  local line state
+
   _arguments -s \
              '1:location:_files'
 }
 
 _tss_location_index_build() {
+  local line state
+
   _arguments -s \
              '1:location:_files -/'
 }
@@ -223,6 +235,8 @@ _tss_location_index() {
 }
 
 _tss_location_of() {
+  local line state
+
   _arguments -s \
              '1:file:_files'
 }
@@ -253,6 +267,8 @@ _tss_location() {
 }
 
 _tss_label() {
+  local line state
+
   _values "label" 'list' $(tss label list)
 }
 
@@ -262,6 +278,7 @@ _tss_util() {
   _arguments -s -C \
              "1: :->cmds" \
              "*::arg:->args"
+
   case "$state" in
     cmds)
       _values "tss-tag command" \
@@ -283,6 +300,7 @@ _tss() {
   _arguments -s -C \
              "1: :->cmds" \
              "*::arg:->args"
+
   case "$state" in
     cmds)
       # Omits 'label' because there's no practical use for it
@@ -299,7 +317,7 @@ _tss() {
               "util[$(tss label util_descr)]" \
       ;;
     args)
-      case $line[1] in
+      case ${(Q)line[1]} in
         add)
           _tss_add
           ;;
