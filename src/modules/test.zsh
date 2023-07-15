@@ -83,7 +83,7 @@ internal_test() {
       unmatched_pattern_found=x
       break
     done
-    if [[ $unmatched_pattern_found ]]; then
+    if [[ ! $unmatched_pattern_found ]]; then
       return 1
     fi
   fi

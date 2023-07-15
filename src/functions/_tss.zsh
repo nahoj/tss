@@ -49,7 +49,7 @@ _tss_add() {
       local -aU tags=(${(s: :)${(Q)line[1]}})
       local patterns=(${(b)tags[@]})
 
-      # Aim to offer files that don't have the tag
+      # Offer files that don't have the tags
       local location
       if location=$(tss location of .); then
         local -a files
@@ -60,7 +60,9 @@ _tss_add() {
         _multi_parts / files
 
       else
-        _files -g "$(tss util files-with-not-all-tags-pattern $patterns)"
+        local file_pattern=$(tss util file-with-not-all-tags-pattern $patterns)
+        # There seems to be bugs in _files -g
+        _path_files -g "**/$file_pattern"
       fi
       ;;
   esac
@@ -74,7 +76,7 @@ _tss_clean() {
   case "$state" in
     files)
       # Regular files with a tag group
-      _files -g '*[[]*[]]*(.)'
+      _path_files -g '**/*[[]*[]]*(.)'
       ;;
   esac
 }
@@ -119,7 +121,8 @@ _tss_remove() {
         _multi_parts / files
 
       else
-        _files -g "$(tss util file-with-tag-pattern "$filter_pattern")"
+        local file_pattern=$(tss util file-with-tag-pattern "$filter_pattern")
+        _path_files -g "**/$file_pattern"
       fi
       ;;
   esac
