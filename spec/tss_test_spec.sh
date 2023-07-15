@@ -1,5 +1,5 @@
 Describe 'tss test'
-  alias tss='src/tss'
+  export TSS_PATH=$(realpath src/modules); . src/functions/tss.zsh
 
   ExampleGroup 'Not name-only'
     BeforeEach 'rm -rf _test && mkdir _test'

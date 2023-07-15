@@ -131,6 +131,8 @@ _tss_remove() {
 ###################
 
 _tss_files() {
+  local line state
+
   _arguments -s -C : \
              "--help[$(tss label generic_completion_help_descr)]" \
              {-I,--no-index}"[$(tss label files_no_index_descr)]" \
@@ -205,7 +207,7 @@ _tss_location_index() {
               "tags[List all tags that appear in the index]" \
       ;;
     args)
-      case $line[1] in
+      case ${(Q)line[1]} in
         build)
           _tss_location_index_build
           ;;
@@ -235,7 +237,7 @@ _tss_location() {
               "of[Print the TagSpaces location of the given path, or an empty string]" \
       ;;
     args)
-      case $line[1] in
+      case ${(Q)line[1]} in
         index)
           _tss_location_index
           ;;
@@ -264,7 +266,7 @@ _tss_util() {
               "file-with-tag-pattern[Output a glob pattern matching any file with a tag matching the given pattern]" \
       ;;
     args)
-      case $line[1] in
+      case ${(Q)line[1]} in
         file-with-tag-pattern)
           ;;
       esac

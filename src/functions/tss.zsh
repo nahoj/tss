@@ -1,4 +1,22 @@
 tss() {
+  if [[ ! -v TSS_PATH ]]; then
+    # Must match the value in Makefile
+    local TSS_PATH=$HOME/.local/share/tss
+  fi
+
+  emulate -LR zsh
+  setopt err_return local_loops no_unset pipe_fail
+  setopt -m 'warn*'
+
+  local IFS=
+
+  zmodload -F zsh/stat b:zstat
+
+  local module
+  for module in $TSS_PATH/*.zsh; do
+    . $module
+  done
+
   local help
   zparseopts -D -F - -help=help
 

@@ -1,5 +1,5 @@
 Describe 'tss add'
-  alias tss='src/tss'
+  export TSS_PATH=$(realpath src/modules); . src/functions/tss.zsh
   BeforeEach 'rm -rf _test && mkdir _test'
   AfterEach 'rm -rf _test'
 

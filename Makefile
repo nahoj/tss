@@ -1,13 +1,11 @@
-
-# If changed, must be changed in "tss" file as well
+# If changed, TSS_PATH must be updated in tss.zsh as well
 PREFIX=$(HOME)/.local
 
 BIN_DIR=$(PREFIX)/bin
-INSTALL_DIR=$(PREFIX)/share/tagspaces-cli
+TSS_PATH=$(PREFIX)/share/tss
 ZSH_FUNCTIONS_DIR=$(PREFIX)/share/zsh/site-functions
 
 SRC_DIR=$(abspath src)
-MODULES=edit files filter index label location main tags test util
 
 all:
 	@echo "make test"
@@ -17,36 +15,36 @@ all:
 .PHONY: all
 
 install:
-	mkdir -p "$(INSTALL_DIR)"
-	install -Dm644 $(MODULES:%=$(SRC_DIR)/%.zsh) "$(INSTALL_DIR)"
+	mkdir -p "$(TSS_PATH)"
+	install -Dm644 "$(SRC_DIR)"/modules/*.zsh "$(TSS_PATH)"
 
 	mkdir -p "$(ZSH_FUNCTIONS_DIR)"
-	install -Dm755 "$(SRC_DIR)/tss" "$(ZSH_FUNCTIONS_DIR)"
-	install -Dm644 "$(SRC_DIR)/_tss.zsh" "$(ZSH_FUNCTIONS_DIR)/_tss"
+	install -Dm644 "$(SRC_DIR)/functions/tss.zsh" "$(ZSH_FUNCTIONS_DIR)/tss"
+	install -Dm644 "$(SRC_DIR)/functions/_tss.zsh" "$(ZSH_FUNCTIONS_DIR)/_tss"
 
 	mkdir -p "$(BIN_DIR)"
-	ln -sf "$(abspath $(ZSH_FUNCTIONS_DIR))/tss" "$(BIN_DIR)"
+	install -Dm755 "$(SRC_DIR)/bin/tss" "$(BIN_DIR)"
 
 	zsh postinstall.zsh "$(ZSH_FUNCTIONS_DIR)"
 .PHONY: install
 
 lninstall:
-	mkdir -p "$(INSTALL_DIR)"
-	ln -sf $(MODULES:%="$(SRC_DIR)/%.zsh") "$(INSTALL_DIR)"
+	mkdir -p "$(TSS_PATH)"
+	ln -sf "$(SRC_DIR)"/modules/*.zsh "$(TSS_PATH)"
 
 	mkdir -p "$(ZSH_FUNCTIONS_DIR)"
-	ln -sf "$(SRC_DIR)/tss" "$(ZSH_FUNCTIONS_DIR)"
-	ln -sf "$(SRC_DIR)/_tss.zsh" "$(ZSH_FUNCTIONS_DIR)/_tss"
+	ln -sf "$(SRC_DIR)/functions/tss.zsh" "$(ZSH_FUNCTIONS_DIR)/tss"
+	ln -sf "$(SRC_DIR)/functions/_tss.zsh" "$(ZSH_FUNCTIONS_DIR)/_tss"
 
 	mkdir -p "$(BIN_DIR)"
-	ln -sf "$(abspath $(ZSH_FUNCTIONS_DIR))/tss" "$(BIN_DIR)"
+	ln -sf "$(SRC_DIR)/bin/tss" "$(BIN_DIR)"
 
 	zsh postinstall.zsh "$(ZSH_FUNCTIONS_DIR)"
 .PHONY: lninstall
 
 uninstall:
 	rm -f "$(BIN_DIR)/tss"
-	rm -rf "$(INSTALL_DIR)"
+	rm -rf "$(TSS_PATH)"
 	rm -f "$(ZSH_FUNCTIONS_DIR)/_tss"
 	rm -f "$(ZSH_FUNCTIONS_DIR)/tss"
 .PHONY: uninstall
