@@ -6,7 +6,10 @@ tss_files() {
   if [[ -n $help ]]; then
     cat <<EOF
 
-Usage: tss files [options] [--] <path>...
+Usage: tss files [options] [--] [<path>...]
+
+List files under the given path(s), or under the current directory if no path is given.
+Uses the location index if available and fresh. Takes the location of the first given path, or of the current directory if no path is given.
 
 Options:
   -I, --no-index                $label_files_no_index_descr
@@ -27,28 +30,55 @@ EOF
   if [[ ${1:-} = '--' ]]; then
     shift
   fi
-  local paths
+  local paths location
   if [[ $# -eq 0 ]]; then
     paths=(*(N))
+    location=$(tss_location_of .) || true
   else
     paths=("$@")
+    location=$(tss_location_of "$1") || true
   fi
 
-  internal_files
+  if [[ $index_mode_opt && $index_mode_opt[1] = (-I|--no-index) ]]; then
+    location=
+  fi
+
+  if [[ $location ]]; then
+    if tss_location_index_is_fresh $location; then
+      local pathh file_path error
+      for pathh in $paths; do
+        require_exists "$pathh" || error=x
+        if [[ -f $pathh ]]; then
+          file_path=$pathh
+          if internal_test; then
+            print -r -- "$pathh"
+          fi
+        elif [[ -d $pathh ]]; then
+          internal_location_index_files_path $location
+        # Not a regular file = don't print
+        fi
+      done
+      [[ ! $error ]]
+
+    else
+      internal_files_in_paths_no_index
+    fi
+
+  else
+    internal_files_in_paths_no_index
+  fi
 }
 
-internal_files() {
-  require_parameter index_mode_opt 'array*'
+internal_files_in_paths_no_index() {
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
   require_parameter not_all_patterns 'array*'
   require_parameter paths 'array*'
 
-  # No-index mode
-  if [[ -n $index_mode_opt && ( $index_mode_opt[1] = '-I' || $index_mode_opt[1] = '--no-index' ) ]]; then
-    local pathh file_path
+  {
+    local pathh file_path error
     for pathh in $paths; do
-      require_exists "$pathh"
+      require_exists "$pathh" || error=x
       if [[ -f $pathh ]]; then
         print -r -- $pathh
       elif [[ -d $pathh ]]; then
@@ -56,76 +86,12 @@ internal_files() {
           print -r -- "$file_path"
         done
       fi
+    done
+    [[ ! $error ]]
 
-    done | {
-      local -r name_only=x
-      internal_filter
+   } | {
+    local -r name_only=x
+    internal_filter
 
-    } || return $?
-
-  else
-    local -r dont_look_up=
-    internal_files_in_paths $paths
-  fi
-}
-
-# List files in the given paths using index(es) if found
-internal_files_in_paths() {
-  require_parameter dont_look_up 'scalar*'
-  require_parameter patterns 'array*'
-  require_parameter anti_patterns 'array*'
-  require_parameter not_all_patterns 'array*'
-
-  local paths
-  paths=($@)
-
-  local pathh file_path
-  local -r name_only=x
-  for pathh in $paths; do
-    require_exists "$pathh"
-
-    if [[ -f $pathh ]]; then
-      file_path=$pathh
-      if internal_test; then
-        print -r -- "$pathh"
-      fi
-
-    elif [[ -d $pathh ]]; then
-      internal_files_in_dir "$pathh"
-
-    # Not a regular file = don't print
-    fi
-  done
-}
-
-# List files under the given dir using the index if found
-internal_files_in_dir() {
-  require_parameter dont_look_up 'scalar*'
-  require_parameter patterns 'array*'
-  require_parameter anti_patterns 'array*'
-  require_parameter not_all_patterns 'array*'
-
-  [[ $# -eq 1 ]] || fail "Expected 1 argument, got $#"
-  local pathh
-  pathh=$1
-
-  # Define location if possible
-  local location
-  if [[ $dont_look_up ]]; then
-    # We know no ancestor directory is a location
-    if [[ -f $pathh/.ts/tsi.json ]]; then
-        location=.
-    fi
-  else
-    location=$(tss_location_of "$pathh") || true
-  fi
-
-  # If we found a location
-  if [[ -n $location ]]; then
-    internal_location_index_files_path
-
-  else
-    local -r dont_look_up=x
-    internal_files_in_paths "$pathh"/*(N)
-  fi
+  } || return $?
 }

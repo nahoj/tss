@@ -1,3 +1,4 @@
+local -i index_ttl_seconds=300
 
 tss_location_index_tags() {
   local location
@@ -156,6 +157,14 @@ tss_location_index_build() {
       do_build_index
 }
 
+tss_location_index_is_fresh() {
+  local location=$1
+  require_is_location "$location"
+
+  local index="$location/.ts/tsi.json"
+  [[ $(zstat +mtime "$index") -gt $(($(date +%s) - $index_ttl_seconds)) ]]
+}
+
 tss_location_index_files() {
   local -a path_opt tags_opts not_tags_opts not_all_tags_opts
   zparseopts -D -E -F - {-path,-path-starts-with}:=path_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts \
@@ -297,6 +306,9 @@ tss_location_index() {
       ;;
     files)
       tss_location_index_files "$@"
+      ;;
+    is-fresh)
+      tss_location_index_is_fresh "$@"
       ;;
     tags)
       tss_location_index_tags "$@"

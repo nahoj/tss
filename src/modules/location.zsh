@@ -7,22 +7,6 @@ require_is_location() {
   fi
 }
 
-tss_location_tags() {
-  local pathh
-  pathh=${1:-.}
-
-  local location index
-  location=$(tss_location_of "$pathh")
-  index="$location/.ts/tsi.json"
-
-  # if index is > 20 minutes old, refresh it
-  if [[ ! -f $index || $(zstat +mtime "$index") -lt $(($(date +%s) - 1200)) ]]; then
-    tss_location_index_build "$location"
-  fi
-
-  tss_location_index_tags "$location"
-}
-
 # Return the given dir if it is a location, or its closest ancestor that is a location,
 # or the empty string if there is none
 tss_location_of_dir_unsafe() {
@@ -52,6 +36,19 @@ tss_location_of() {
     abs_dir_path=${pathh:a:h}
   fi
   tss_location_of_dir_unsafe "$abs_dir_path"
+}
+
+tss_location_tags() {
+  local pathh=${1:-.}
+
+  local location
+  location=$(tss_location_of "$pathh")
+
+  if ! tss_location_index_is_fresh "$location"; then
+    tss_location_index_build "$location"
+  fi
+
+  tss_location_index_tags "$location"
 }
 
 tss_location() {
