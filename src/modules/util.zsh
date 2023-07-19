@@ -52,6 +52,13 @@ require_parameter() {
   fi
 }
 
+# Fail if any given argument is not a valid pattern
+# Adapted from https://stackoverflow.com/a/76699936
+require_valid_patterns() {
+  setopt nullglob
+  { : ${~@[@]} } always { TRY_BLOCK_ERROR=0 } # Prints "bad pattern: ..." if one is.
+}
+
 # Evaluate the given arguments as a command and print the exit status
 status() {
   unsetopt err_exit err_return
@@ -133,12 +140,17 @@ internal_parse_tag_opts() {
   for ((i=2; i <= $#tags_opts; i+=2)); do
     patterns+=(${(s: :)tags_opts[i]})
   done
+  require_valid_patterns $patterns
+
   for ((i=2; i <= $#not_tags_opts; i+=2)); do
     anti_patterns+=(${(s: :)not_tags_opts[i]})
   done
+  require_valid_patterns $anti_patterns
+
   for ((i=2; i <= $#not_all_tags_opts; i+=2)); do
     not_all_patterns+=(${(s: :)not_all_tags_opts[i]})
   done
+  require_valid_patterns $not_all_patterns
 }
 
 

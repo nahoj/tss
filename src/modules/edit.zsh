@@ -199,6 +199,7 @@ EOF
   fi
   local remove_patterns file_paths
   remove_patterns=(${(s: :)1})
+  require_valid_patterns $remove_patterns
   if ((remove_patterns[(Ie)*])); then
     logg "Removing all tags with * is forbidden as it might be a mistake. If this is what you want to do, use:"
     logg "    tss file clean FILE ..."
