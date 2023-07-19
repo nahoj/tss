@@ -116,8 +116,8 @@ internal_add_remove() {
   local file_path old_tags new_tags tag
   local -r name_only=x
   for file_path in $file_paths; do
-    require_well_formed "$file_path"
-    require_exists_taggable "$file_path"
+    require_well_formed "$file_path" || continue
+    require_exists_taggable "$file_path" || continue
 
     old_tags=(${(s: :)$(internal_file_tags)})
     if [[ $#remove_patterns -gt 0 ]]; then
