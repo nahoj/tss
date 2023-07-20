@@ -133,11 +133,17 @@ tss_location_index_build() {
     # If the current dir is not empty
     if [ .(FN) ]; then
       # Exclude hidden files
-      find [^.]* -not -path '*/.*' -printf '%y\t%T@\t%s\t' -print0 | {
+      find [^.]* -not -path '*/.*' -printf '%y\t%T@\t%s\t' -print | {
         local IFS=$'\t'
         local typ mtime size_bytes file_path
         local -i i=0
-        while read -r -d $'\0' typ mtime size_bytes file_path; do
+        # Don't use 'read -d' in code that can be run asychronously because of this bug in zsh <= 5.9:
+        # https://www.zsh.org/mla/workers/2023/msg00696.html
+        while read -r typ mtime size_bytes file_path; do
+          if [[ ! ($typ = ? && $mtime = (-|)<->.<-> && $size_bytes = <-> && -n $file_path) ]]; then
+            logg "Invalid data from find (tab or newline in file path?): "$typ$'\t'$mtime$'\t'$size_bytes$'\t'$file_path
+            continue
+          fi
           if (( i++ > 0 )); then
             print ','
           fi
