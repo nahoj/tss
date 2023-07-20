@@ -64,13 +64,14 @@ internal_print_json_file_object() {
   require_parameter mtime 'scalar*'
   require_parameter size_bytes 'scalar*'
   require_parameter file_path 'scalar*'
+  # optional: uuid 'scalar*'
 
   local file_name
   file_name=${file_path:t}
 
   print '  {'
   print -n '    "uuid": "'
-  print -n $(uuidgen)
+  print -n ${uuid:-$(uuidgen)}
 
   print -n '",\n    "name": '
   print_json_string "$file_name"
@@ -136,6 +137,11 @@ tss_location_index_build() {
       find [^.]* -not -path '*/.*' -printf '%y\t%T@\t%s\t' -print | {
         local IFS=$'\t'
         local typ mtime size_bytes file_path
+        # Like TagSpaces, generate consecutive UUIDs as a performance improvement
+        local -i uuid_start
+        uuid_start=16#${"$(uuidgen)":0:8}
+        local uuid_suffix uuid
+        uuid_suffix=${"$(uuidgen)":10:27}
         local -i i=0
         # Don't use 'read -d' in code that can be run asychronously because of this bug in zsh <= 5.9:
         # https://www.zsh.org/mla/workers/2023/msg00696.html
@@ -144,13 +150,15 @@ tss_location_index_build() {
             logg "Invalid data from find (tab or newline in file path?): "$typ$'\t'$mtime$'\t'$size_bytes$'\t'$file_path
             continue
           fi
-          if (( i++ > 0 )); then
-            print ','
-          fi
           if [[ $file_path = *[[:cntrl:]]* ]]; then
             logg "Warning: File path contains control character(s): ${(qqqq)file_path}"
           fi
+          if (( i > 0 )); then
+            print ','
+          fi
+          uuid=$(printf '%08x-%s' $(( (uuid_start + i) % 0x100000000 )) "$uuid_suffix")
           internal_print_json_file_object
+          (( i++ ))
         done
       } >>$new_index || return $?
     fi
