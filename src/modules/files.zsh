@@ -62,6 +62,7 @@ EOF
 
     else
       internal_files_in_paths_no_index
+      internal_location_index_build_if_stale_async
     fi
 
   else

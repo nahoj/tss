@@ -1,4 +1,6 @@
-local -i index_ttl_seconds=300
+# TTL: Not too short because we're slow, and not exactly 10 minutes to
+# have a lower probability of rebuilding at the same time as TagSpaces.
+local -i index_ttl_seconds=900
 
 tss_location_index_tags() {
   local location
@@ -118,12 +120,11 @@ internal_print_json_file_object() {
 }
 
 tss_location_index_build() {
-  local location
-  location=${1:-.}
+  local location=${1:-.}
   require_is_location "$location"
 
   do_build_index() {
-    print -r "Building index $location/.ts/tsi.json"
+    logg "Building index $location/.ts/tsi.json"
 
     # Note: We are in $location
     local index new_index
@@ -169,6 +170,14 @@ tss_location_index_build() {
   with_lock_file "$location/.ts/tsi.json" \
     with_cd "$location" \
       do_build_index
+}
+
+internal_location_index_build_if_stale_async() {
+  require_parameter location 'scalar*'
+
+  if ! tss_location_index_is_fresh "$location"; then
+    tss_location_index_build "$location" &>/dev/null &!
+  fi
 }
 
 tss_location_index_is_fresh() {

@@ -16,6 +16,7 @@ Describe 'tss add'
     local dir="_test/dir"
     mkdir "$dir"
     When call tss add tag "$dir"
+    The status should equal 1
     The stderr should not equal ""
     The path "$dir" should be directory
   End

@@ -33,18 +33,26 @@ EOF
     return 0
   fi
 
+  # Process positional arguments
   if [[ ${1:-} = -- ]]; then
     shift
   fi
   if [[ $# -eq 0 ]]; then
     fail "At least one argument expected"
   fi
-  local file_path
-  local -i statuss=0
-  for file_path in $@; do
-    clean_one_file "$file_path" || statuss=$?
+  local file_paths=($@)
+
+  local file_path error
+  for file_path in $file_paths; do
+    clean_one_file "$file_path" || error=x
   done
-  return $statuss
+
+  local location
+  if location=$(tss_location_of "${file_paths[1]:h}"); then
+    internal_location_index_build_if_stale_async
+  fi
+
+  [[ ! $error ]]
 }
 
 set_file_tags() {
@@ -108,39 +116,54 @@ tag_in_patterns() {
   return 1
 }
 
+internal_add_remove_one_file() {
+  require_parameter add_tags 'array*'
+  require_parameter remove_patterns 'array*'
+  require_parameter file_path 'scalar*'
+  require_well_formed "$file_path"
+  require_exists_taggable "$file_path"
+
+  local old_tags new_tags tag
+  local -r name_only=x
+  old_tags=(${(s: :)$(internal_file_tags)})
+  if [[ $#remove_patterns -gt 0 ]]; then
+    new_tags=()
+    for tag in $old_tags; do
+      if ! tag_in_patterns "$tag" $remove_patterns; then
+        new_tags+=("$tag")
+      fi
+    done
+  else
+    new_tags=($old_tags)
+  fi
+
+  for tag in $add_tags; do
+    if ! ((new_tags[(Ie)$tag])); then
+      new_tags+=("$tag")
+    fi
+  done
+
+  if ! arrayeq new_tags old_tags; then
+    set_file_tags "$file_path" $new_tags
+  fi
+}
+
 internal_add_remove() {
   require_parameter add_tags 'array*'
   require_parameter remove_patterns 'array*'
   require_parameter file_paths 'array*'
 
-  local file_path old_tags new_tags tag
-  local -r name_only=x
+  local file_path error
   for file_path in $file_paths; do
-    require_well_formed "$file_path" || continue
-    require_exists_taggable "$file_path" || continue
-
-    old_tags=(${(s: :)$(internal_file_tags)})
-    if [[ $#remove_patterns -gt 0 ]]; then
-      new_tags=()
-      for tag in $old_tags; do
-        if ! tag_in_patterns "$tag" $remove_patterns; then
-          new_tags+=("$tag")
-        fi
-      done
-    else
-      new_tags=($old_tags)
-    fi
-
-    for tag in $add_tags; do
-      if ! ((new_tags[(Ie)$tag])); then
-        new_tags+=("$tag")
-      fi
-    done
-
-    if ! arrayeq new_tags old_tags; then
-      set_file_tags "$file_path" $new_tags
-    fi
+    internal_add_remove_one_file || error=x
   done
+
+  local location
+  if location=$(tss_location_of "${file_paths[1]:h}"); then
+    internal_location_index_build_if_stale_async
+  fi
+
+  [[ ! $error ]]
 }
 
 tss_add() {
