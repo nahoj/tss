@@ -255,6 +255,9 @@ tss_util() {
   subcommand=$1
   shift
   case $subcommand in
+    failk)
+      failk "$@"
+      ;;
     file-with-not-all-tags-pattern)
       tss_util_file_with_not_all_tags_pattern "$@"
       ;;
