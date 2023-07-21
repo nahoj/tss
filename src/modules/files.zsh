@@ -43,6 +43,17 @@ EOF
     location=
   fi
 
+  internal_files
+}
+
+internal_files() {
+  require_parameter location 'scalar*'
+  require_parameter paths 'array*'
+
+  require_parameter patterns 'array*'
+  require_parameter anti_patterns 'array*'
+  require_parameter not_all_patterns 'array*'
+
   if [[ $location ]]; then
     if tss_location_index_is_fresh $location; then
       local pathh file_path error

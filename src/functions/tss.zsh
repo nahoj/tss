@@ -42,6 +42,7 @@ Commands:
   test             $label_test_descr
 
 Internal commands:
+  internal-tags    See 'tags'.
   label            $label_label_descr
   util             $label_util_descr
 
@@ -65,6 +66,9 @@ EOF
       ;;
     filter)
       tss_filter "$@"
+      ;;
+    internal-tags)
+      internal_tags "$@"
       ;;
     label)
       tss_label "$@"
