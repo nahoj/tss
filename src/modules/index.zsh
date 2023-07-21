@@ -131,6 +131,8 @@ tss_location_index_build() {
     index=".ts/tsi.json"
     new_index="$index.NEW"
 
+    local error
+
     print '[' >$new_index
     # If the current dir is not empty
     if [ .(FN) ]; then
@@ -144,11 +146,12 @@ tss_location_index_build() {
         local uuid_suffix uuid
         uuid_suffix=${"$(uuidgen)":10:27}
         local -i i=0
-        # Don't use 'read -d' in code that can be run asychronously because of this bug in zsh <= 5.9:
+        # Don't 'read -d' in code that can be run asynchronously because of this bug in zsh <= 5.9:
         # https://www.zsh.org/mla/workers/2023/msg00696.html
         while read -r typ mtime size_bytes file_path; do
           if [[ ! ($typ = ? && $mtime = (-|)<->.<-> && $size_bytes = <-> && -n $file_path) ]]; then
-            logg "Invalid data from find (tab or newline in file path?): "$typ$'\t'$mtime$'\t'$size_bytes$'\t'$file_path
+            logg "Invalid data from 'find' (tab or newline in file path?): "$typ$'\t'$mtime$'\t'$size_bytes$'\t'$file_path
+            error=x
             continue
           fi
           if [[ $file_path = *[[:cntrl:]]* ]]; then
@@ -166,6 +169,7 @@ tss_location_index_build() {
     print '\n]' >>$new_index
 
     mv $new_index $index
+    [[ ! $error ]]
   }
   with_lock_file "$location/.ts/tsi.json" \
     with_cd "$location" \
@@ -257,6 +261,29 @@ internal_location_index_files_path_starts_with() {
   internal_location_index_files_dir_and_file_name_prefix
 }
 
+# Matches a string that contains an unescaped special glob character.
+# This is an extended pattern.
+local pattern_pattern='(*[^\\](\\\\)#|)[*(|<[?^#]*'
+
+print_condition_of_yes_pattern() {
+  setopt extended_glob
+  local pattern=$1
+  # If $pattern is actually a pattern, not a simple string
+  if [[ $pattern = ${~pattern_pattern} ]]; then
+    return 1
+  else
+    print -n '.tags | any(.title == '
+    print_json_string "$pattern"
+    print -n ')'
+  fi
+}
+
+print_condition_of_anti_pattern() {
+  print_condition_of_yes_pattern "$1"
+  # If the above succeeded
+  print -n ' | not'
+}
+
 internal_location_index_files_dir_and_file_name_prefix() {
   require_parameter location 'scalar*'
   require_is_location "$location"
@@ -298,10 +325,30 @@ internal_location_index_files_dir_and_file_name_prefix() {
     return 0
   fi
 
+  # Build jq condition to select file objects
   local condition='.isFile'
+
+  # Path condition
   if [[ -n $index_prefix ]]; then
     condition+=' and (.path | startswith('$(print_json_string "$index_prefix")'))'
   fi
+
+  # Tag conditions
+  local filter_patterns=() filter_anti_patterns=() pattern pattern_condition
+  for pattern in $patterns; do
+    if pattern_condition=$(print_condition_of_yes_pattern "$pattern"); then
+      condition+=" and ($pattern_condition)"
+    else
+      filter_patterns+=("$pattern")
+    fi
+  done
+  for pattern in $anti_patterns; do
+    if pattern_condition=$(print_condition_of_anti_pattern "$pattern"); then
+      condition+=" and ($pattern_condition)"
+    else
+      filter_anti_patterns+=("$pattern")
+    fi
+  done
 
   local index="$location/.ts/tsi.json"
   jq -r 'map(select('$condition') | .path) | .[]' "$index" | {
@@ -312,7 +359,8 @@ internal_location_index_files_dir_and_file_name_prefix() {
       print -r -- "${file_path:$offset}"
     done
 
-  } | {
+  } | () {
+    local -r patterns=($filter_patterns) anti_patterns=($filter_anti_patterns)
     local -r name_only=x
     internal_filter
 
