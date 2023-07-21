@@ -15,10 +15,10 @@ Print tags found on files in the given path(s) and/or files listed on stdin.
 Options:
   -n, --name-only                           Use only the given file names; assume each path is a taggable file.
                                             In particular, this precludes browsing directories.
-  --not-matching <pattern...>               Only print tags that don't match any of the given patterns.
-  --on-files-with-tags <pattern...>         Only print tags present on files with tags matching all the given patterns.
-  --on-files-without-tags <pattern...>      Only print tags present on files without any tag matching any of the given patterns.
-  --on-files-with-not-all-tags <pattern...> Only print tags present on files that lack tags matching at least one of the given patterns.
+  --not-matching <pattern...>               $label_tags_not_matching_descr
+  --on-files-with-tags <pattern...>         $label_tags_on_files_with_tags_descr
+  --on-files-without-tags <pattern...>      $label_tags_on_files_without_tags_descr
+  --on-files-with-not-all-tags <pattern...> $label_tags_on_files_with_not_all_tags_descr
   --stdin                                   $label_tags_stdin_descr
   --help                                    $label_generic_help_help_descr
 

@@ -23,6 +23,10 @@ local label_remove_descr="Remove tags from one or more files."
 
 local label_tags_descr="List tags present on one or more files."
 local label_tags_name_only_descr="Use only the given file names; assume each path is a taggable file. This precludes browsing directories."
+local label_tags_not_matching_descr="Only print tags that don't match any of the given patterns."
+local label_tags_on_files_with_tags_descr="Only print tags present on files with tags matching all the given patterns."
+local label_tags_on_files_without_tags_descr="Only print tags present on files without any tag matching any of the given patterns."
+local label_tags_on_files_with_not_all_tags_descr="Only print tags present on files that lack tags matching at least one of the given patterns."
 local label_tags_stdin_descr="Read file paths from stdin in addition to browsing paths given as arguments (if any)"
 
 local label_test_descr="Test whether a file matches one or more tag patterns."

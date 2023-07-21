@@ -229,7 +229,7 @@ _tss_files() {
   _arguments -s -C -S : \
              "--help[$(tss label generic_completion_help_descr)]" \
              {-I,--no-index}"[$(tss label files_no_index_descr)]" \
-             "--not-all-tags[$(tss label files_not_all_tags_descr)]:patterns:->not-all-tags" \
+             "*--not-all-tags[$(tss label files_not_all_tags_descr)]:patterns:->not-all-tags" \
              '*'{-T,--not-tags}"[$(tss label files_not_tags_descr)]:patterns:->not-tags" \
              '*'{-t,--tags}"[$(tss label files_tags_descr)]:patterns:->yes-tags" \
              '*:file:_files' \
@@ -256,7 +256,7 @@ _tss_filter() {
   _arguments -s -C : \
              "--help[$(tss label generic_completion_help_descr)]" \
              {-n,--name-only}"[$(tss label filter_name_only_descr)]" \
-             "--not-all-tags[$(tss label filter_not_all_tags_descr)]:patterns:->not-all-tags" \
+             "*--not-all-tags[$(tss label filter_not_all_tags_descr)]:patterns:->not-all-tags" \
              '*'{-T,--not-tags}"[$(tss label filter_not_tags_descr)]:patterns:->not-tags" \
              '*'{-t,--tags}"[$(tss label filter_tags_descr)]:patterns:->yes-tags" \
 
@@ -281,8 +281,48 @@ _tss_tags() {
   _arguments -s -C -S : \
              "--help[$(tss label generic_completion_help_descr)]" \
              {-n,--name-only}"[$(tss label tags_name_only_descr)]" \
+             "*--not-matching[$(tss label tags_not_matching_descr)]:patterns:->not-matching-tags" \
+             "*--on-files-with-not-all-tags[$(tss label tags_on_files_with_not_all_tags_descr)]:patterns:->not-all-tags" \
+             "*--on-files-without-tags[$(tss label tags_on_files_without_tags_descr)]:patterns:->not-tags" \
+             "*--on-files-with-tags[$(tss label tags_on_files_with_tags_descr)]:patterns:->yes-tags" \
              "--stdin[$(tss label tags_stdin_descr)]" \
-             '1:file:_files'
+             '*:file:_files' \
+
+  case "$state" in
+    *-tags)
+      local location
+      location=$(tss location of ${(Q)line[1]:-.})
+      # If no path is (yet) known, list all tags in the current directory's location, if it is in one
+      local -r paths=(${(Q)line[@]:-${location:-.}})
+      local -r name_only=
+
+      local tags
+      tags=($(case "$state" in
+        not-matching-tags)
+          local -ar patterns anti_patterns not_all_patterns
+          local -r not_matching_pattern= stdin=
+          tss internal-tags
+          ;;
+        *)
+          () {
+            # Define fake opt_args for _tss_comp_internal_get_tags
+            local tags=${opt_args[--on-files-with-tags]:-}
+            local not_tags=${opt_args[--on-files-without-tags]:-}
+            local not_all_tags=${opt_args[--on-files-with-not-all-tags]:-}
+            local -Ar opt_args=(
+              [--tags]="$tags"
+              [--not-tags]="$not_tags"
+              [--not-all-tags]="$not_all_tags"
+            )
+            _tss_comp_internal_get_tags
+          }
+          ;;
+      esac)) || return $?
+
+      [[ $#tags -ne 0 ]] || return 1
+      _values -s ' ' "tag" $tags
+      ;;
+  esac
 }
 
 _tss_test() {
@@ -292,7 +332,7 @@ _tss_test() {
   _arguments -s -C -S : \
              "--help[$(tss label generic_completion_help_descr)]" \
              {-n,--name-only}"[$(tss label test_name_only_descr)]" \
-             "--not-all-tags[$(tss label test_not_all_tags_descr)]:patterns:->not-all-tags" \
+             "*--not-all-tags[$(tss label test_not_all_tags_descr)]:patterns:->not-all-tags" \
              '*'{-T,--not-tags}"[$(tss label test_not_tags_descr)]:patterns:->not-tags" \
              '*'{-t,--tags}"[$(tss label test_tags_descr)]:patterns:->yes-tags" \
              '1:file:_files'
