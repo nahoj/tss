@@ -151,6 +151,20 @@ _tss_remove() {
 # Query subcommands
 ###################
 
+_tss_comp_parse_index_mode() {
+  setopt $_tss_comp_shell_options
+
+  _tss_comp_require_parameter use_index 'scalar*'
+
+  # Get the last index-mode option before the current word, if any
+  local index_mode_opt=${${(Q)words[1,$CURRENT]}[(R)(-i|--index|-I|--no-index)]}
+  if [[ index_mode_opt = (-I|--no-index) ]]; then
+    use_index=no
+  else
+    use_index=yes
+  fi
+}
+
 _tss_comp_parse_patterns_opt_args() {
   setopt $_tss_comp_shell_options
 
@@ -184,12 +198,16 @@ _tss_comp_parse_patterns_opt_args() {
 _tss_comp_internal_get_tags() {
   setopt $_tss_comp_shell_options
 
-  _tss_comp_require_parameter state 'array*'
   _tss_comp_require_parameter location 'scalar*'
   _tss_comp_require_parameter paths 'array*'
   _tss_comp_require_parameter name_only 'scalar*'
+  # plus standard completion parameters
 
   # Prepare all parameters for 'tss internal-tags'
+
+  local use_index
+  _tss_comp_parse_index_mode
+
   local patterns anti_patterns not_all_patterns args
   patterns=(${(s: :)$(
     args=${opt_args[-t]:-}:${opt_args[--tags]:-}
@@ -228,6 +246,7 @@ _tss_files() {
 
   _arguments -s -C -S : \
              "--help[$(tss label generic_completion_help_descr)]" \
+             {-i,--index}"[$(tss label files_index_descr)]" \
              {-I,--no-index}"[$(tss label files_no_index_descr)]" \
              "*--not-all-tags[$(tss label files_not_all_tags_descr)]:patterns:->not-all-tags" \
              '*'{-T,--not-tags}"[$(tss label files_not_tags_descr)]:patterns:->not-tags" \
@@ -280,6 +299,8 @@ _tss_tags() {
 
   _arguments -s -C -S : \
              "--help[$(tss label generic_completion_help_descr)]" \
+             {-i,--index}"[$(tss label tags_index_descr)]" \
+             {-I,--no-index}"[$(tss label tags_no_index_descr)]" \
              {-n,--name-only}"[$(tss label tags_name_only_descr)]" \
              "*--not-matching[$(tss label tags_not_matching_descr)]:patterns:->not-matching-tags" \
              "*--on-files-with-not-all-tags[$(tss label tags_on_files_with_not_all_tags_descr)]:patterns:->not-all-tags" \
@@ -299,6 +320,8 @@ _tss_tags() {
       local tags
       tags=($(case "$state" in
         not-matching-tags)
+          local use_index
+          _tss_comp_parse_index_mode
           local -ar patterns anti_patterns not_all_patterns
           local -r not_matching_pattern= stdin=
           tss internal-tags

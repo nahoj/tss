@@ -1,7 +1,7 @@
 tss_files() {
   local help index_mode_opt tags_opts not_tags_opts not_all_tags_opts
-  zparseopts -D -E -F - -help=help {I,-no-index}=index_mode_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts \
-    -not-all-tags+:=not_all_tags_opts
+  zparseopts -D -E -F - -help=help {i,-index,I,-no-index}=index_mode_opt {t,-tags}+:=tags_opts \
+    {T,-not-tags}+:=not_tags_opts -not-all-tags+:=not_all_tags_opts
 
   if [[ -n $help ]]; then
     cat <<EOF
@@ -12,6 +12,7 @@ List files under the given path(s), or under the current directory if no path is
 Uses the location index if available and fresh. Takes the location of the first given path, or of the current directory if no path is given.
 
 Options:
+  -i, --index                   $label_files_index_descr
   -I, --no-index                $label_files_no_index_descr
   -t, --tags <pattern...>       $label_files_tags_descr
   -T, --not-tags <pattern...>   $label_files_not_tags_descr
@@ -23,6 +24,8 @@ EOF
   fi
 
   # Process options
+  local use_index
+  internal_parse_index_mode_opt
   local -aU patterns anti_patterns not_all_patterns
   internal_parse_tag_opts
 
@@ -39,23 +42,20 @@ EOF
     location=$(tss_location_of "$1") || true
   fi
 
-  if [[ $index_mode_opt && $index_mode_opt[1] = (-I|--no-index) ]]; then
-    location=
-  fi
-
   internal_files
 }
 
 internal_files() {
   require_parameter location 'scalar*'
+  require_parameter use_index 'scalar*'
   require_parameter paths 'array*'
 
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
   require_parameter not_all_patterns 'array*'
 
-  if [[ $location ]]; then
-    if tss_location_index_is_fresh $location; then
+  if [[ $use_index != no && $location ]]; then
+    if [[ $use_index = yes ]] || tss_location_index_is_fresh $location; then
       local pathh file_path error
       for pathh in $paths; do
         require_exists "$pathh" || error=x
@@ -69,6 +69,7 @@ internal_files() {
         # Not a regular file = don't print
         fi
       done
+      internal_location_index_build_if_stale_async
       [[ ! $error ]]
 
     else

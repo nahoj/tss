@@ -1,6 +1,7 @@
 tss_tags() {
-  local help name_only_opt not_matching_opts tags_opts not_tags_opts not_all_tags_opts stdin_opt
-  zparseopts -D -E -F - -help=help {n,-name-only}=name_only_opt -not-matching+:=not_matching_opts \
+  local help index_mode_opt name_only_opt not_matching_opts tags_opts not_tags_opts not_all_tags_opts stdin_opt
+  zparseopts -D -E -F - -help=help {i,-index,I,-no-index}=index_mode_opt {n,-name-only}=name_only_opt \
+    -not-matching+:=not_matching_opts \
     -on-files-with-tags+:=tags_opts -on-files-without-tags+:=not_tags_opts \
     -on-files-with-not-all-tags+:=not_all_tags_opts -stdin=stdin_opt
 
@@ -13,6 +14,8 @@ Usage:          tss tags [<options>] [--] [<path>...]
 Print tags found on files in the given path(s) and/or files listed on stdin.
 
 Options:
+  -i, --index                               $label_tags_index_descr
+  -I, --no-index                            $label_tags_no_index_descr
   -n, --name-only                           Use only the given file names; assume each path is a taggable file.
                                             In particular, this precludes browsing directories.
   --not-matching <pattern...>               $label_tags_not_matching_descr
@@ -29,6 +32,9 @@ EOF
   # Process options
   local name_only=$name_only_opt
   local stdin=$stdin_opt
+
+  local use_index
+  internal_parse_index_mode_opt
 
   local -aU not_matching_patterns
   local -i i
@@ -59,6 +65,7 @@ EOF
 
 internal_tags() {
   require_parameter location 'scalar*'
+  require_parameter use_index 'scalar*'
   require_parameter paths 'array*'
   require_parameter stdin 'scalar*'
 

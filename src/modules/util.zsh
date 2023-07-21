@@ -131,6 +131,28 @@ with_lock_file() {
 # Command-line parsing
 ######################
 
+internal_parse_index_mode_opt() {
+  require_parameter index_mode_opt 'array*'
+  require_parameter use_index 'scalar*'
+
+  unsetopt warn_nested_var
+
+  case ${index_mode_opt[1]:-} in
+    -i|--index)
+      use_index=yes
+      ;;
+    '')
+      use_index=if-fresh
+      ;;
+    -I|--no-index)
+      use_index=no
+      ;;
+    *)
+      failk 2 "Invalid index-mode opt: ${index_mode_opt[1]}"
+      ;;
+  esac
+}
+
 internal_parse_tag_opts() {
   require_parameter tags_opts 'array*'
   require_parameter not_tags_opts 'array*'

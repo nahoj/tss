@@ -2,6 +2,7 @@ local label_add_descr="Add tags to one or more files."
 local label_clean_descr="Remove tag group from one or more files."
 
 local label_files_descr="List files with tags matching the given patterns."
+local label_files_index_descr="Use index if available, even if stale."
 local label_files_no_index_descr="Don't use any index, only use the file system."
 local label_files_not_all_tags_descr="Don't output files that have tags matching all of the given patterns."
 local label_files_not_tags_descr="Don't output files that have any tag matching any of the given patterns."
@@ -22,6 +23,8 @@ local label_query_descr="Alias for 'files'."
 local label_remove_descr="Remove tags from one or more files."
 
 local label_tags_descr="List tags present on one or more files."
+local label_tags_index_descr=$label_files_index_descr
+local label_tags_no_index_descr=$label_files_no_index_descr
 local label_tags_name_only_descr="Use only the given file names; assume each path is a taggable file. This precludes browsing directories."
 local label_tags_not_matching_descr="Only print tags that don't match any of the given patterns."
 local label_tags_on_files_with_tags_descr="Only print tags present on files with tags matching all the given patterns."
