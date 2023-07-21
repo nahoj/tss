@@ -212,6 +212,13 @@ require_exists() {
   fi
 }
 
+require_directory() {
+  local pathh=$1
+  if [[ ! -d $pathh ]]; then
+    failk 2 "Path does not exist or is not a directory: ${(qqq)pathh}"
+  fi
+}
+
 require_exists_taggable() {
   local file_path
   file_path=$1

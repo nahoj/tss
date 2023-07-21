@@ -422,6 +422,14 @@ _tss_location_index() {
   esac
 }
 
+_tss_location_init() {
+  local curcontext=$curcontext state state_descr line
+  local -A opt_args
+
+  _arguments -s -C -S : \
+             '1:location:_files -/'
+}
+
 _tss_location_of() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
@@ -441,6 +449,7 @@ _tss_location() {
   case "$state" in
     cmds)
       _values "tss-location command" \
+              "init[Initialize a location]" \
               "index[TODO descr]" \
               "of[Print the TagSpaces location of the given path, or an empty string]" \
       ;;
@@ -448,6 +457,9 @@ _tss_location() {
       case ${(Q)line[1]} in
         index)
           _tss_location_index
+          ;;
+        init)
+          _tss_location_init
           ;;
         of)
           _tss_location_of
