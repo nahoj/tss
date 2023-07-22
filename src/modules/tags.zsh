@@ -42,7 +42,7 @@ EOF
     not_matching_patterns+=(${(s: :)not_matching_opts[i]})
   done
   require_valid_patterns $not_matching_patterns
-  local not_matching_pattern="(${(j:|:)not_matching_patterns})"
+  local not_matching_pattern="((${(j:|:)not_matching_patterns}))"
 
   local -aU patterns anti_patterns not_all_patterns
   internal_parse_tag_opts
