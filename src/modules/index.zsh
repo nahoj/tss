@@ -138,8 +138,9 @@ tss_location_index_build() {
     print '[' >$new_index
     # If the current dir is not empty
     if [ .(FN) ]; then
-      # Exclude hidden files
-      find [^.]* -not -path '*/.*' -printf '%y\t%T@\t%s\t' -print | {
+      # Don't 'find *' in case there is a file whose name starts with a dash.
+      # Exclude hidden files.
+      find . -not -path '*/.*' -printf '%y\t%T@\t%s\t' -print | {
         local IFS=$'\t'
         local typ mtime size_bytes file_path
         # Like TagSpaces, generate consecutive UUIDs as a performance improvement
@@ -162,6 +163,7 @@ tss_location_index_build() {
           if (( i > 0 )); then
             print ','
           fi
+          file_path=${file_path#./}
           uuid=$(printf '%08x-%s' $(( (uuid_start + i) % 0x100000000 )) "$uuid_suffix")
           internal_print_json_file_object
           (( i++ ))

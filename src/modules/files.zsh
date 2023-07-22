@@ -1,6 +1,6 @@
 tss_files() {
-  local help index_mode_opt tags_opts not_tags_opts not_all_tags_opts
-  zparseopts -D -E -F - -help=help {i,-index,I,-no-index}=index_mode_opt {t,-tags}+:=tags_opts \
+  local help ignored index_mode_opt tags_opts not_tags_opts not_all_tags_opts
+  zparseopts -D -E -F - -help=help C=ignored {i,-index,I,-no-index}=index_mode_opt {t,-tags}+:=tags_opts \
     {T,-not-tags}+:=not_tags_opts -not-all-tags+:=not_all_tags_opts
 
   if [[ -n $help ]]; then
@@ -12,6 +12,7 @@ List files under the given path(s), or under the current directory if no path is
 Uses the location index if available and fresh. Takes the location of the first given path, or of the current directory if no path is given.
 
 Options:
+  -C                            $label_generic_C_descr
   -i, --index                   $label_files_index_descr
   -I, --no-index                $label_files_no_index_descr
   -t, --tags <pattern...>       $label_files_tags_descr
@@ -56,14 +57,16 @@ internal_files() {
 
   if [[ $use_index != no && $location ]]; then
     if [[ $use_index = yes ]] || tss_location_index_is_fresh $location; then
-      local pathh file_path error
+      local pathh error
       for pathh in $paths; do
         require_exists "$pathh" || error=x
         if [[ -f $pathh ]]; then
-          file_path=$pathh
-          if internal_test; then
-            print -r -- "$pathh"
-          fi
+          () {
+            local -r name_only=x file_path=$pathh
+            if internal_test; then
+              print -r -- "$pathh"
+            fi
+          }
         elif [[ -d $pathh ]]; then
           internal_location_index_files_path $location
         # Not a regular file = don't print

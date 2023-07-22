@@ -14,6 +14,7 @@ local label_filter_not_all_tags_descr=$label_files_not_all_tags_descr
 local label_filter_not_tags_descr=$label_files_not_tags_descr
 local label_filter_tags_descr=$label_files_tags_descr
 
+local label_generic_C_descr="Offer less clever, more inclusive, typically faster completion. Ignored once the command is run."
 local label_generic_completion_help_descr="Show help message."
 local label_generic_help_help_descr="Show this help message."
 

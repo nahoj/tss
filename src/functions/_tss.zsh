@@ -44,8 +44,8 @@ _tss_add() {
   local -A opt_args
 
   _arguments -s -C -S : \
-             '1: :->tags' \
-             '*::file:->files'
+             ':tags:->tags' \
+             '*:file:->files'
 
   setopt -m $tss_comp_shell_option_patterns
 
@@ -58,6 +58,7 @@ _tss_add() {
         tags=(${(s: :)$(tss location index tags "$location")})
       else
         # All tags in the current directory
+        local f
         for f in *(.N); do
           tags+=(${(s: :)$(tss tags "$f")})
         done
@@ -119,8 +120,8 @@ _tss_remove() {
   local -A opt_args
 
   _arguments -s -C -S : \
-             '1: :->tags' \
-             '*::file:->files'
+             ':tags:->tags' \
+             '*:file:->files'
 
   setopt -m $tss_comp_shell_option_patterns
 
@@ -133,6 +134,7 @@ _tss_remove() {
         tags=(${(s: :)$(tss location index tags "$location")})
       else
         # All tags in the current directory
+        local f
         for f in *(.N); do
           tags+=(${(s: :)$(tss tags "$f")})
         done
@@ -188,7 +190,7 @@ _tss_comp_internal_parse_index_mode() {
   fi
 }
 
-_tss_comp_parse_patterns_opt_args() {
+_tss_comp_parse_one_patterns_opt_args() {
   local opt_args=$1
   local current_word=$2
 
@@ -216,6 +218,38 @@ _tss_comp_parse_patterns_opt_args() {
   print -r -- $result
 }
 
+_tss_comp_internal_parse_all_patterns_opt_args() {
+  _tss_comp_require_parameter patterns 'array*'
+  _tss_comp_require_parameter anti_patterns 'array*'
+  _tss_comp_require_parameter not_all_patterns 'array*'
+
+  local args
+  patterns=(${(s: :)$(
+    args=${opt_args[-t]:-}:${opt_args[--tags]:-}
+    if [[ $state = yes-tags ]]; then
+      _tss_comp_parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
+    else
+      _tss_comp_parse_one_patterns_opt_args "$args" ''
+    fi
+  )})
+  anti_patterns=(${(s: :)$(
+    args=${opt_args[-T]:-}:${opt_args[--not-tags]:-}
+    if [[ $state = not-tags ]]; then
+      _tss_comp_parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
+    else
+      _tss_comp_parse_one_patterns_opt_args "$args" ''
+    fi
+  )})
+  not_all_patterns=(${(s: :)$(
+    args=${opt_args[--not-all-tags]:-}
+    if [[ $state = not-all-tags ]]; then
+      _tss_comp_parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
+    else
+      _tss_comp_parse_one_patterns_opt_args "$args" ''
+    fi
+  )})
+}
+
 _tss_comp_internal_get_tags() {
   _tss_comp_require_parameter location 'scalar*'
   _tss_comp_require_parameter paths 'array*'
@@ -223,54 +257,66 @@ _tss_comp_internal_get_tags() {
   # plus standard completion parameters
 
   # Prepare all parameters for 'tss internal-tags'
-
   local use_index
   _tss_comp_internal_parse_index_mode
 
-  local patterns anti_patterns not_all_patterns args
-  patterns=(${(s: :)$(
-    args=${opt_args[-t]:-}:${opt_args[--tags]:-}
-    if [[ $state = yes-tags ]]; then
-      _tss_comp_parse_patterns_opt_args "$args" "$words[$CURRENT]"
-    else
-      _tss_comp_parse_patterns_opt_args "$args" ''
-    fi
-  )})
-  anti_patterns=(${(s: :)$(
-    args=${opt_args[-T]:-}:${opt_args[--not-tags]:-}
-    if [[ $state = not-tags ]]; then
-      _tss_comp_parse_patterns_opt_args "$args" "$words[$CURRENT]"
-    else
-      _tss_comp_parse_patterns_opt_args "$args" ''
-    fi
-  )})
-  not_all_patterns=(${(s: :)$(
-    args=${opt_args[--not-all-tags]:-}
-    if [[ $state = not-all-tags ]]; then
-      _tss_comp_parse_patterns_opt_args "$args" "$words[$CURRENT]"
-    else
-      _tss_comp_parse_patterns_opt_args "$args" ''
-    fi
-  )})
-
+  local -a patterns anti_patterns not_all_patterns
+  _tss_comp_internal_parse_all_patterns_opt_args
   local -r not_matching_pattern="(${(j:|:)patterns}|${(j:|:)anti_patterns})"
 
   local -r stdin=
   tss internal-tags
 }
 
+_tss_comp_internal_files() {
+  _tss_comp_require_parameter patterns 'array*'
+  _tss_comp_require_parameter anti_patterns 'array*'
+  _tss_comp_require_parameter not_all_patterns 'array*'
+
+  if [[ -v opt_args[-C] ]]; then
+#        local file_pattern
+#        file_pattern=$(tss util file-with-tag-pattern "$filter_pattern")
+    unsetopt -m $tss_comp_shell_option_patterns
+    _files #-g "**/$file_pattern"
+
+  else
+    local dir
+    if [[ ${(Q)words[$CURRENT]} = */ ]]; then
+      dir=${(Q)words[$CURRENT]}
+    else
+      dir=${${(Q)words[$CURRENT]}:h}
+    fi
+    local location
+    location=$(tss location of $dir) || true
+    local use_index
+    _tss_comp_internal_parse_index_mode
+    local -r paths=(${(Q)words[$CURRENT]}*(N))
+    local -a files
+    files=(${(f)$(tss internal-files)})
+    unsetopt -m $tss_comp_shell_option_patterns
+    _multi_parts -f - / files
+  fi
+}
+
 _tss_files() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
 
+  files() {
+    local -a patterns anti_patterns not_all_patterns
+    _tss_comp_internal_parse_all_patterns_opt_args
+    _tss_comp_internal_files
+  }
+
   _arguments -s -C -S : \
+             "-C[$(tss label generic_C_descr)]" \
              "--help[$(tss label generic_completion_help_descr)]" \
              {-i,--index}"[$(tss label files_index_descr)]" \
              {-I,--no-index}"[$(tss label files_no_index_descr)]" \
              "*--not-all-tags[$(tss label files_not_all_tags_descr)]:patterns:->not-all-tags" \
              '*'{-T,--not-tags}"[$(tss label files_not_tags_descr)]:patterns:->not-tags" \
              '*'{-t,--tags}"[$(tss label files_tags_descr)]:patterns:->yes-tags" \
-             '*:file:_files' \
+             '*:file:files'
 
   setopt -m tss_comp_shell_option_patterns
 
@@ -407,7 +453,7 @@ _tss_test() {
              "*--not-all-tags[$(tss label test_not_all_tags_descr)]:patterns:->not-all-tags" \
              '*'{-T,--not-tags}"[$(tss label test_not_tags_descr)]:patterns:->not-tags" \
              '*'{-t,--tags}"[$(tss label test_tags_descr)]:patterns:->yes-tags" \
-             '1:file:_files'
+             ':file:_files'
 
   setopt -m tss_comp_shell_option_patterns
 
@@ -428,7 +474,7 @@ _tss_location_index_tags() {
   local -A opt_args
 
   _arguments -s -C -S : \
-             '1:location:_files'
+             ':location:_files -/'
 }
 
 _tss_location_index_build() {
@@ -436,7 +482,7 @@ _tss_location_index_build() {
   local -A opt_args
 
   _arguments -s -C -S : \
-             '1:location:_files -/'
+             ':location:_files -/'
 }
 
 _tss_location_index() {
@@ -471,7 +517,7 @@ _tss_location_init() {
   local -A opt_args
 
   _arguments -s -C -S : \
-             '1:location:_files -/'
+             ':location:_files -/'
 }
 
 _tss_location_of() {
@@ -479,7 +525,7 @@ _tss_location_of() {
   local -A opt_args
 
   _arguments -s -C -S : \
-             '1:file:_files'
+             ':file:_files'
 }
 
 _tss_location() {
