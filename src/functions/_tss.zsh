@@ -64,7 +64,7 @@ _tss_add() {
       fi
       if [[ $tags ]]; then
         local values
-        values=($(_tss_comp_escape_values $tags))
+        values=(${(f)$(_tss_comp_escape_values $tags)})
         unsetopt -m $tss_comp_shell_option_patterns
         _values -s ' ' "tag" $values
       else
@@ -80,15 +80,16 @@ _tss_add() {
       local location
       if location=$(tss location of .); then
         local -a files
-        files=("${(@f)"$( \
+        files=(${(f)$(
           tss location index files "$location" --path-starts-with "${(Q)words[$CURRENT]}" \
-            --not-all-tags "${(j: :)patterns}" \
-          )"}")
+            --not-all-tags "${(j: :)patterns}"
+          )})
         unsetopt -m $tss_comp_shell_option_patterns
         _multi_parts -f - / files
 
       else
-        local file_pattern=$(tss util file-with-not-all-tags-pattern $patterns)
+        local file_pattern
+        file_pattern=$(tss util file-with-not-all-tags-pattern $patterns)
         unsetopt -m $tss_comp_shell_option_patterns
         # There seems to be bugs in _files -g
         _path_files -g "**/$file_pattern"
@@ -138,7 +139,7 @@ _tss_remove() {
       fi
       if [[ $tags ]]; then
         local values
-        values=($(_tss_comp_escape_values $tags))
+        values=(${(f)$(_tss_comp_escape_values $tags)})
         unsetopt -m $tss_comp_shell_option_patterns
         _values -s ' ' "tag" $values
       else
@@ -148,21 +149,21 @@ _tss_remove() {
 
     files)
       # Offer files that have any tag matching any of the given patterns
-      local -aU patterns
-      patterns=(${(s: :)${(Q)line[1]}})
+      local -aU patterns=(${(s: :)${(Q)line[1]}})
       local filter_pattern="((${(j:|:)patterns}))"
 
       local location
       if location=$(tss location of .); then
         local -a files
-        files=("${(@f)"$( \
-          tss location index files "$location" --path-starts-with "${(Q)words[$CURRENT]}" -t "$filter_pattern" \
-          )"}")
+        files=(${(f)$(
+          tss location index files "$location" --path-starts-with "${(Q)words[$CURRENT]}" -t "$filter_pattern"
+          )})
         unsetopt -m $tss_comp_shell_option_patterns
         _multi_parts -f - / files
 
       else
-        local file_pattern=$(tss util file-with-tag-pattern "$filter_pattern")
+        local file_pattern
+        file_pattern=$(tss util file-with-tag-pattern "$filter_pattern")
         unsetopt -m $tss_comp_shell_option_patterns
         _path_files -g "**/$file_pattern"
       fi
@@ -284,7 +285,7 @@ _tss_files() {
       tags=(${(s: :)$(_tss_comp_internal_get_tags)})
       if [[ $tags ]]; then
         local values
-        values=($(_tss_comp_escape_values $tags))
+        values=(${(f)$(_tss_comp_escape_values $tags)})
         unsetopt -m $tss_comp_shell_option_patterns
         _values -s ' ' "tag" $values
       else
@@ -369,7 +370,7 @@ _tss_tags() {
 
       if [[ $tags ]]; then
         local values
-        values=($(_tss_comp_escape_values $tags))
+        values=(${(f)$(_tss_comp_escape_values $tags)})
         unsetopt -m $tss_comp_shell_option_patterns
         _values -s ' ' "tag" $values
       else
@@ -388,7 +389,7 @@ _tss_test_tags() {
   tags=(${(s: :)$(_tss_comp_internal_get_tags)})
   if [[ $tags ]]; then
     local values
-    values=($(_tss_comp_escape_values $tags))
+    values=(${(f)$(_tss_comp_escape_values $tags)})
     unsetopt -m $tss_comp_shell_option_patterns
     _values -s ' ' "tag" $values
   else
@@ -515,7 +516,7 @@ _tss_location() {
 _tss_label() {
   setopt -m $tss_comp_shell_option_patterns
   local values
-  values=($(_tss_comp_escape_values 'list' $(tss label list)))
+  values=(${(f)$(_tss_comp_escape_values 'list' ${(f)$(tss label list)})})
   unsetopt -m $tss_comp_shell_option_patterns
   _values "label" $values
 }
@@ -553,6 +554,8 @@ _tss() {
   if [[ ${TSS_DEBUG:-} ]]; then
     tss_comp_shell_option_patterns+=(local_loops no_unset 'warn*')
   fi
+
+  local IFS=
 
   local curcontext=$curcontext state state_descr line
   local -A opt_args

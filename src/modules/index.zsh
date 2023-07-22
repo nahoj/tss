@@ -15,7 +15,9 @@ tss_location_index_tags() {
   index="$location/.ts/tsi.json"
 
   # Get sorted, unique tags
-  jq -r '[.[].tags | .[].title] | unique | .[]' "$index"
+  local -a tags
+  tags=(${(f)$(jq -r '[.[].tags | .[].title] | unique | .[]' "$index")})
+  print -r -- $tags
 }
 
 print_json_string() {
