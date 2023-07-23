@@ -30,6 +30,7 @@ Describe 'tss tags'
     It 'rejects a directory that does not exist'
       When call tss tags _test/dir
       The status should equal 1
+      The stdout should be blank
       The stderr should not equal ""
     End
 

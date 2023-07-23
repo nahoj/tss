@@ -128,22 +128,19 @@ _tss_internal_comp_parse_all_patterns_opt_args() {
 }
 
 _tss_internal_comp_get_tags() {
-  _tss_comp_require_parameter location 'scalar*'
   _tss_comp_require_parameter paths 'array*'
-  _tss_comp_require_parameter name_only 'scalar*'
+  _tss_comp_require_parameter tags 'array*'
   # plus standard completion parameters
 
   # Prepare all parameters for 'tss internal-tags'
-  local use_index
-  _tss_internal_comp_parse_index_mode
-
   local -a patterns anti_patterns not_all_patterns
   _tss_internal_comp_parse_all_patterns_opt_args
+
   local regular_file_pattern accept_non_regular
   tss util internal-file-pattern
+
   local -r not_matching_pattern="(${(j:|:)patterns}|${(j:|:)anti_patterns})"
 
-  local -r stdin=
   tss internal-tags
 }
 
@@ -191,10 +188,7 @@ _tss_files() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
   _arguments -s -C -S : \
-             "-C[$(tss label generic_C_descr)]" \
              "--help[$(tss label generic_completion_help_descr)]" \
-             {-i,--index}"[$(tss label files_index_descr)]" \
-             {-I,--no-index}"[$(tss label files_no_index_descr)]" \
              "*--not-all-tags[$(tss label files_not_all_tags_descr)]:patterns:->not-all-tags" \
              '*'{-T,--not-tags}"[$(tss label files_not_tags_descr)]:patterns:->not-tags" \
              '*'{-t,--tags}"[$(tss label files_tags_descr)]:patterns:->yes-tags" \
@@ -204,13 +198,10 @@ _tss_files() {
 
   case "$state" in
     *-tags)
-      local location
-      location=$(tss location of ${(Q)line[1]:-.})
       # If no path is (yet) known, list all tags in the current directory's location, if it is in one
-      local -r paths=(${(Q)line[@]:-${location:-.}})
-      local -r name_only=
-      local tags
-      tags=(${(s: :)$(_tss_internal_comp_get_tags)})
+      local -r paths=(${(Q)line[@]:-.})
+      local -a tags
+      _tss_internal_comp_get_tags
       if [[ $tags ]]; then
         local values
         values=(${(f)$(_tss_comp_escape_values $tags)})
@@ -226,7 +217,6 @@ _tss_files() {
 _tss_filter() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
-
   _arguments -s -C : \
              "--help[$(tss label generic_completion_help_descr)]" \
              {-n,--name-only}"[$(tss label filter_name_only_descr)]" \
@@ -246,17 +236,12 @@ _tss_filter() {
 _tss_tags() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
-
   _arguments -s -C -S : \
              "--help[$(tss label generic_completion_help_descr)]" \
-             {-i,--index}"[$(tss label tags_index_descr)]" \
-             {-I,--no-index}"[$(tss label tags_no_index_descr)]" \
-             {-n,--name-only}"[$(tss label tags_name_only_descr)]" \
              "*--not-matching[$(tss label tags_not_matching_descr)]:patterns:->not-matching-tags" \
              "*--on-files-with-not-all-tags[$(tss label tags_on_files_with_not_all_tags_descr)]:patterns:->not-all-tags" \
              "*--on-files-without-tags[$(tss label tags_on_files_without_tags_descr)]:patterns:->not-tags" \
              "*--on-files-with-tags[$(tss label tags_on_files_with_tags_descr)]:patterns:->yes-tags" \
-             "--stdin[$(tss label tags_stdin_descr)]" \
              '*:file:_files' \
 
   setopt -m tss_comp_shell_option_patterns
@@ -273,10 +258,8 @@ _tss_tags() {
       tags=(${(s: :)$(
         case "$state" in
           not-matching-tags)
-            local use_index
-            _tss_internal_comp_parse_index_mode
             local -ar patterns anti_patterns not_all_patterns
-            local -r not_matching_pattern= stdin=
+            local -r not_matching_pattern=
             tss internal-tags
             ;;
           *)
@@ -399,7 +382,6 @@ _tss_add() {
 _tss_clean() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
-
   _arguments -s -C -S : \
              '*::file:->files'
 
@@ -463,7 +445,6 @@ _tss_remove() {
 _tss_location_index_tags() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
-
   _arguments -s -C -S : \
              ':location:_files -/'
 }
@@ -471,7 +452,6 @@ _tss_location_index_tags() {
 _tss_location_index_build() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
-
   _arguments -s -C -S : \
              ':location:_files -/'
 }
@@ -479,7 +459,6 @@ _tss_location_index_build() {
 _tss_location_index() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
-
   _arguments -s -C -S : \
              "(-): :->cmds" \
              "*::arg:->args"
@@ -506,7 +485,6 @@ _tss_location_index() {
 _tss_location_init() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
-
   _arguments -s -C -S : \
              ':location:_files -/'
 }
@@ -514,7 +492,6 @@ _tss_location_init() {
 _tss_location_of() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
-
   _arguments -s -C -S : \
              ':file:_files'
 }
@@ -522,7 +499,6 @@ _tss_location_of() {
 _tss_location() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
-
   _arguments -s -C -S : \
              "(-): :->cmds" \
              "*::arg:->args"
@@ -561,7 +537,6 @@ _tss_label() {
 _tss_util() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
-
   _arguments -s -C -S : \
              "(-): :->cmds" \
              "*::arg:->args"
@@ -598,7 +573,6 @@ _tss() {
 
   local curcontext=$curcontext state state_descr line
   local -A opt_args
-
   _arguments -s -C -S : \
              "(-): :->cmds" \
              "*::arg:->args"

@@ -2,8 +2,6 @@ local label_add_descr="Add tags to one or more files."
 local label_clean_descr="Remove tag group from one or more files."
 
 local label_files_descr="List files with tags matching the given patterns."
-local label_files_index_descr="Use index if available, even if stale."
-local label_files_no_index_descr="Don't use any index, only use the file system."
 local label_files_not_all_tags_descr="Don't output files that have tags matching all of the given patterns."
 local label_files_not_tags_descr="Don't output files that have any tag matching any of the given patterns."
 local label_files_tags_descr="Only output files that have tags matching all the given patterns."
@@ -14,7 +12,6 @@ local label_filter_not_all_tags_descr=$label_files_not_all_tags_descr
 local label_filter_not_tags_descr=$label_files_not_tags_descr
 local label_filter_tags_descr=$label_files_tags_descr
 
-local label_generic_C_descr="Offer less clever, more inclusive, typically faster completion. Ignored once the command is run."
 local label_generic_completion_help_descr="Show help message."
 local label_generic_help_help_descr="Show this help message."
 
@@ -24,14 +21,10 @@ local label_query_descr="Alias for 'files'."
 local label_remove_descr="Remove tags from one or more files."
 
 local label_tags_descr="List tags present on one or more files."
-local label_tags_index_descr=$label_files_index_descr
-local label_tags_no_index_descr=$label_files_no_index_descr
-local label_tags_name_only_descr="Use only the given file names; assume each path is a taggable file. This precludes browsing directories."
 local label_tags_not_matching_descr="Only print tags that don't match any of the given patterns."
 local label_tags_on_files_with_tags_descr="Only print tags present on files with tags matching all the given patterns."
 local label_tags_on_files_without_tags_descr="Only print tags present on files without any tag matching any of the given patterns."
 local label_tags_on_files_with_not_all_tags_descr="Only print tags present on files that lack tags matching at least one of the given patterns."
-local label_tags_stdin_descr="Read file paths from stdin in addition to browsing paths given as arguments (if any)"
 
 local label_test_descr="Test whether a file matches one or more tag patterns."
 local label_test_name_only_descr="Test only the file's name, assume the file exists and is a taggable file."

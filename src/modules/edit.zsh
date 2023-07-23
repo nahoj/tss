@@ -123,18 +123,19 @@ internal_add_remove_one_file() {
   require_well_formed "$file_path"
   require_exists_taggable "$file_path"
 
-  local old_tags new_tags tag
-  local -r name_only=x
-  old_tags=(${(s: :)$(internal_file_tags)})
+  local -a file_tags
+  internal_file_tags_name_only
+
+  local new_tags tag
   if [[ $#remove_patterns -gt 0 ]]; then
     new_tags=()
-    for tag in $old_tags; do
+    for tag in $file_tags; do
       if ! tag_in_patterns "$tag" $remove_patterns; then
         new_tags+=("$tag")
       fi
     done
   else
-    new_tags=($old_tags)
+    new_tags=($file_tags)
   fi
 
   for tag in $add_tags; do
@@ -143,7 +144,7 @@ internal_add_remove_one_file() {
     fi
   done
 
-  if ! arrayeq new_tags old_tags; then
+  if ! arrayeq new_tags file_tags; then
     set_file_tags "$file_path" $new_tags
   fi
 }
@@ -225,7 +226,7 @@ EOF
   require_valid_patterns $remove_patterns
   if ((remove_patterns[(Ie)*])); then
     logg "Removing all tags with * is forbidden as it might be a mistake. If this is what you want to do, use:"
-    logg "    tss file clean FILE ..."
+    logg "    tss file clean <file> ..."
     return 1
   fi
   shift

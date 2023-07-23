@@ -97,10 +97,11 @@ internal_print_json_file_object() {
 
   print -n ',\n    "tags": ['
   if [[ $typ = 'f' ]]; then
+    local -a file_tags
+    internal_file_tags_name_only
     local tag
-    local -r name_only=x
     local -i i=0
-    for tag in ${(s: :)$(internal_file_tags)}; do
+    for tag in $file_tags; do
       if (( i++ > 0 )); then
         print -rn ', '
       fi
