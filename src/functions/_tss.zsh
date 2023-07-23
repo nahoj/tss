@@ -68,7 +68,6 @@ _tss_comp_internal_files() {
   local regular_file_pattern accept_non_regular
   tss util internal-file-pattern
 
-  # (null_glob is in effect)
   local files=(${~dir_pattern}${~regular_file_pattern}(.))
   if [[ $accept_non_regular ]]; then
     files+=(${~dir_pattern}*(^.))

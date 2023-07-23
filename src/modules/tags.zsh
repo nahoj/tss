@@ -41,7 +41,7 @@ EOF
   if [[ $# -gt 0 ]]; then
     local paths=($@)
   else
-    local paths=(*(N))
+    local paths=(*)
   fi
 
   local tags=()

@@ -56,13 +56,11 @@ require_parameter() {
 
 # Adapted from https://stackoverflow.com/a/76699936
 is_valid_pattern() {
-  setopt nullglob
   { : ${~1} } always { TRY_BLOCK_ERROR=0 } &>/dev/null
 }
 
 # Fail if any given argument is not a valid pattern
 require_valid_patterns() {
-  setopt nullglob
   { : ${~@[@]} } always { TRY_BLOCK_ERROR=0 } # Prints "bad pattern: ..." if one is.
 }
 

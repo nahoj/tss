@@ -29,7 +29,7 @@ EOF
     shift
   fi
   if [[ $# -eq 0 ]]; then
-    local paths=(*(N))
+    local paths=(*)
   else
     local paths=("$@")
   fi
@@ -59,9 +59,9 @@ internal_files() {
     require_exists "$pathh" || error=x
 
     if [[ -d $pathh ]]; then
-      files+=("${pathh%/}"/**/${~regular_file_pattern}(.N))
+      files+=("${pathh%/}"/**/${~regular_file_pattern}(.))
       if [[ $accept_non_regular ]]; then
-        files+=("${pathh%/}"/**/*(N^.))
+        files+=("${pathh%/}"/**/*(^.))
       fi
 
     else

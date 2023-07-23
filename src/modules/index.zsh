@@ -271,7 +271,6 @@ internal_location_index_files_path_starts_with() {
 local pattern_pattern='(*[^\\](\\\\)#|)[*(|<[?^#]*'
 
 print_condition_of_yes_pattern() {
-  setopt extended_glob
   local pattern=$1
   # If $pattern is actually a pattern, not a simple string
   if [[ $pattern = ${~pattern_pattern} ]]; then

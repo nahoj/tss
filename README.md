@@ -15,7 +15,7 @@ $ tss files -t 'alps' -T 'copy' *  # or --tags 'alps' --not-tags 'copy'
 IMG-2653[vacation alps].jpg
 ```
 
-Supports [glob patterns](https://zsh.sourceforge.io/Doc/Release/Expansion.html#Glob-Operators):
+Supports (extended) [glob patterns](https://zsh.sourceforge.io/Doc/Release/Expansion.html#Glob-Operators):
 ```shell
 $ tss remove 'v* a*' "IMG-2653_copy[vacation alps copy].jpg"
 $ find | tss filter -t '(alps|pyrenees)'

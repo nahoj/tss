@@ -4,16 +4,17 @@ tss() {
     local TSS_PATH=$HOME/.local/share/tss
   fi
 
+  # Robustness settings
   emulate -LR zsh
   setopt err_return local_loops no_unset pipe_fail
   setopt -m 'warn*'
   # We suffix each pipeline with '|| return $?' because of this bug in
   # combining err_return with pipe_fail in zsh <= 5.9:
   # https://www.zsh.org/mla/workers/2023/msg00633.html
-
-  setopt extended_glob null_glob
-
   local IFS=
+
+  # Other options
+  setopt extended_glob null_glob
 
   zmodload -F zsh/stat b:zstat
 
