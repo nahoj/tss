@@ -6,135 +6,42 @@
 # General utils
 ###############
 
-_tss_comp_log() {
-  if [[ ${TSS_DEBUG:-} ]]; then
-    print -r -- "$@" >>tss-comp.log
-  fi
-}
+_tss_comp_raw_values() {
+  local desc=$1
+  shift
+  (( $# )) || return 1
 
-_tss_comp_logl() {
-  if [[ ${TSS_DEBUG:-} ]]; then
-    print -rl -- "$@" >>tss-comp.log
-  fi
-}
-
-_tss_comp_require_parameter() {
-  if [[ ${TSS_DEBUG:-} ]]; then
-    if [[ ! -v $1 ]]; then
-      tss util failk 4 "Parameter ${(qq)1} must be set"
-    elif [[ ${(t)${(P)1}} != ${~2} ]]; then
-      tss util failk 4 "Parameter ${(qq)1} must have type ${(qq)2}"
-    fi
-  fi
-}
-
-# Escape special characters in a raw string to give to _values
-_tss_comp_escape_value() {
-  local c
-  for c in ${(s::)1}; do
-    case $c in
-      [][\(\)*:\\+-])
-        print -nr -- "\\$c"
-        ;;
-      *)
-        print -nr -- $c
-    esac
-  done
-}
-
-_tss_comp_escape_values() {
-  local value
+  local value values=()
   for value in "$@"; do
-    _tss_comp_escape_value "$value"
-    print
+    values+=($(tss comp escape-value "$value"))
   done
+
+  unsetopt -m $tss_comp_shell_option_patterns
+  if [[ $sep ]]; then
+    _values -s "$sep" "$desc" $values
+  else
+    _values "$desc" $values
+  fi
 }
 
+_tss_comp_raw_values_sep() {
+  local sep=$1
+  shift
+  _tss_comp_raw_values "$@"
+}
 
 ####################
 # File and tag utils
 ####################
 
-_tss_internal_comp_parse_index_mode() {
-  _tss_comp_require_parameter use_index 'scalar*'
-
-  # Get the last index-mode option before the current word, if any
-  local index_mode_opt=${${(Q)words[1,$CURRENT]}[(R)(-i|--index|-I|--no-index)]}
-  if [[ index_mode_opt = (-I|--no-index) ]]; then
-    use_index=no
-  else
-    use_index=yes
-  fi
-}
-
-_tss_comp_parse_one_patterns_opt_args() {
-  local opt_args=$1
-  local current_word=$2
-
-  # Split on unquoted ':' and unquote (_arguments quoting)
-  local -a patterns_args
-  IFS=':' read -A patterns_args <<<$opt_args
-
-  if [[ $current_word ]]; then
-    # Drop current word (one instance only) if present
-    local -i i=$patterns_args[(Ie)$current_word]
-    if (( i )); then
-      patterns_args[$i]=()
-    fi
-  fi
-
-  local -aU result
-  local pattern
-  # Unquote again (user input quoting) and split on ' '
-  for pattern in ${(@s: :)${(@Q)patterns_args}}; do
-    if tss util is-valid-pattern $pattern; then
-      result+=($pattern)
-    fi
-  done
-
-  print -r -- $result
-}
-
-_tss_internal_comp_parse_all_patterns_opt_args() {
-  _tss_comp_require_parameter patterns 'array*'
-  _tss_comp_require_parameter anti_patterns 'array*'
-  _tss_comp_require_parameter not_all_patterns 'array*'
-
-  local args
-  patterns=(${(s: :)$(
-    args=${opt_args[-t]:-}:${opt_args[--tags]:-}
-    if [[ $state = yes-tags ]]; then
-      _tss_comp_parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
-    else
-      _tss_comp_parse_one_patterns_opt_args "$args" ''
-    fi
-  )})
-  anti_patterns=(${(s: :)$(
-    args=${opt_args[-T]:-}:${opt_args[--not-tags]:-}
-    if [[ $state = not-tags ]]; then
-      _tss_comp_parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
-    else
-      _tss_comp_parse_one_patterns_opt_args "$args" ''
-    fi
-  )})
-  not_all_patterns=(${(s: :)$(
-    args=${opt_args[--not-all-tags]:-}
-    if [[ $state = not-all-tags ]]; then
-      _tss_comp_parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
-    else
-      _tss_comp_parse_one_patterns_opt_args "$args" ''
-    fi
-  )})
-}
-
-_tss_internal_comp_get_tags() {
-  _tss_comp_require_parameter paths 'array*'
-  _tss_comp_require_parameter tags 'array*'
+_tss_comp_internal_get_tags() {
+  tss comp require-parameter paths 'array*'
+  tss comp require-parameter tags 'array*'
   # plus standard completion parameters
 
   # Prepare all parameters for 'tss internal-tags'
   local -a patterns anti_patterns not_all_patterns
-  _tss_internal_comp_parse_all_patterns_opt_args
+  tss comp internal-parse-patterns-opt-args
 
   local regular_file_pattern accept_non_regular
   tss util internal-file-pattern
@@ -144,10 +51,10 @@ _tss_internal_comp_get_tags() {
   tss internal-tags
 }
 
-_tss_internal_comp_files() {
-  _tss_comp_require_parameter patterns 'array*'
-  _tss_comp_require_parameter anti_patterns 'array*'
-  _tss_comp_require_parameter not_all_patterns 'array*'
+_tss_comp_internal_files() {
+  tss comp require-parameter patterns 'array*'
+  tss comp require-parameter anti_patterns 'array*'
+  tss comp require-parameter not_all_patterns 'array*'
 
   local dir_pattern
   if [[ ${(Q)words[$CURRENT]} != */* ]]; then
@@ -166,11 +73,8 @@ _tss_internal_comp_files() {
   if [[ $accept_non_regular ]]; then
     files+=(${~dir_pattern}*(^.))
   fi
-  _tss_comp_logl files_head: $files[1,10]
 
   unsetopt -m $tss_comp_shell_option_patterns
-#    local expl
-#    _wanted files expl 'files'
   _multi_parts -f - / files
 }
 
@@ -181,8 +85,8 @@ _tss_internal_comp_files() {
 _tss_files() {
   files() {
     local -a patterns anti_patterns not_all_patterns
-    _tss_internal_comp_parse_all_patterns_opt_args
-    _tss_internal_comp_files
+    tss comp internal-parse-patterns-opt-args
+    _tss_comp_internal_files
   }
 
   local curcontext=$curcontext state state_descr line
@@ -201,15 +105,8 @@ _tss_files() {
       # If no path is (yet) known, list all tags in the current directory's location, if it is in one
       local -r paths=(${(Q)line[@]:-.})
       local -a tags
-      _tss_internal_comp_get_tags
-      if [[ $tags ]]; then
-        local values
-        values=(${(f)$(_tss_comp_escape_values $tags)})
-        unsetopt -m $tss_comp_shell_option_patterns
-        _values -s ' ' "tag" $values
-      else
-        return 1
-      fi
+      _tss_comp_internal_get_tags
+      _tss_comp_raw_values_sep ' ' "tag" $tags
       ;;
   esac
 }
@@ -264,7 +161,7 @@ _tss_tags() {
             ;;
           *)
             () {
-              # Define fake opt_args for _tss_internal_comp_get_tags
+              # Define fake opt_args for _tss_comp_internal_get_tags
               local tags=${opt_args[--on-files-with-tags]:-}
               local not_tags=${opt_args[--on-files-without-tags]:-}
               local not_all_tags=${opt_args[--on-files-with-not-all-tags]:-}
@@ -273,20 +170,13 @@ _tss_tags() {
                 [--not-tags]="$not_tags"
                 [--not-all-tags]="$not_all_tags"
               )
-              _tss_internal_comp_get_tags
+              _tss_comp_internal_get_tags
             }
             ;;
         esac
         )})
 
-      if [[ $tags ]]; then
-        local values
-        values=(${(f)$(_tss_comp_escape_values $tags)})
-        unsetopt -m $tss_comp_shell_option_patterns
-        _values -s ' ' "tag" $values
-      else
-        return 1
-      fi
+      _tss_comp_raw_values_sep ' ' "tag" $tags
       ;;
   esac
 }
@@ -297,15 +187,8 @@ _tss_test_tags() {
   local -r paths=(${location:-.})
   local -r name_only=
   local tags
-  tags=(${(s: :)$(_tss_internal_comp_get_tags)})
-  if [[ $tags ]]; then
-    local values
-    values=(${(f)$(_tss_comp_escape_values $tags)})
-    unsetopt -m $tss_comp_shell_option_patterns
-    _values -s ' ' "tag" $values
-  else
-    return 1
-  fi
+  tags=(${(s: :)$(_tss_comp_internal_get_tags)})
+  _tss_comp_raw_values_sep ' ' "tag" $tags
 }
 
 _tss_test() {
@@ -340,7 +223,7 @@ _tss_add() {
     local -aU tags=(${(s: :)${(Q)line[1]}})
     local patterns=() anti_patterns=()
     local not_all_patterns(${(b)tags[@]})
-    _tss_internal_comp_files
+    _tss_comp_internal_files
   }
 
   local curcontext=$curcontext state state_descr line
@@ -366,14 +249,7 @@ _tss_add() {
           tags+=(${(s: :)$(tss tags "$f")})
         done
       fi
-      if [[ $tags ]]; then
-        local values
-        values=(${(f)$(_tss_comp_escape_values $tags)})
-        unsetopt -m $tss_comp_shell_option_patterns
-        _values -s ' ' "tag" $values
-      else
-        return 1
-      fi
+      _tss_comp_raw_values_sep ' ' "tag" $tags
       ;;
   esac
 }
@@ -399,7 +275,7 @@ _tss_remove() {
     local -aU arg_patterns=(${(s: :)${(Q)line[1]}})
     local -r patterns=("((${(j:|:)arg_patterns}))")
     local -r anti_patterns=() not_all_patterns=()
-    _tss_internal_comp_files
+    _tss_comp_internal_files
   }
 
   local curcontext=$curcontext state state_descr line
@@ -425,14 +301,7 @@ _tss_remove() {
           tags+=(${(s: :)$(tss tags "$f")})
         done
       fi
-      if [[ $tags ]]; then
-        local values
-        values=(${(f)$(_tss_comp_escape_values $tags)})
-        unsetopt -m $tss_comp_shell_option_patterns
-        _values -s ' ' "tag" $values
-      else
-        return 1
-      fi
+      _tss_comp_raw_values_sep ' ' "tag" $tags
       ;;
   esac
 }
@@ -526,12 +395,37 @@ _tss_location() {
   esac
 }
 
+#######
+# Misc.
+#######
+
+_tss_comp() {
+  local curcontext=$curcontext state state_descr line
+  local -A opt_args
+  _arguments -s -C -S : \
+             "(-): :->cmds" \
+             "*::arg:->args"
+
+  case "$state" in
+    cmds)
+      _values "tss-comp command" \
+              "escape-value" \
+              "internal-parse-patterns-opt-args" \
+              "require-parameter" \
+      ;;
+    args)
+      case ${(Q)line[1]} in
+        *)
+          return 1
+          ;;
+      esac
+      ;;
+  esac
+}
+
 _tss_label() {
   setopt -m $tss_comp_shell_option_patterns
-  local values
-  values=(${(f)$(_tss_comp_escape_values 'list' ${(f)$(tss label list)})})
-  unsetopt -m $tss_comp_shell_option_patterns
-  _values "label" $values
+  _tss_comp_raw_values "label" "list" "${(f)$(tss label list)}"
 }
 
 _tss_util() {
@@ -544,7 +438,6 @@ _tss_util() {
   case "$state" in
     cmds)
       _values "tss-util command" \
-              "failk" \
               "internal-file-pattern" \
               "is-valid-pattern" \
       ;;
@@ -579,12 +472,13 @@ _tss() {
 
   case "$state" in
     cmds)
-      # Omits 'label' because there's no practical use for it
+      # Omits comp and label because there's no practical use for them
       _values "tss command" \
               "add[$(tss label add_descr)]" \
               "clean[$(tss label clean_descr)]" \
               "files[$(tss label files_descr)]" \
               "filter[$(tss label filter_descr)]" \
+              "internal-files[See 'files'.]" \
               "internal-tags[See 'tags'.]" \
               "location[$(tss label location_descr)]" \
               "query[$(tss label query_descr)]" \
@@ -597,6 +491,9 @@ _tss() {
       case ${(Q)line[1]} in
         add)
           _tss_add
+          ;;
+        comp)
+          _tss_comp
           ;;
         clean)
           _tss_clean

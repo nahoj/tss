@@ -11,7 +11,7 @@ tss() {
   # combining err_return with pipe_fail in zsh <= 5.9:
   # https://www.zsh.org/mla/workers/2023/msg00633.html
 
-  setopt extended_glob
+  setopt extended_glob null_glob
 
   local IFS=
 
@@ -44,6 +44,7 @@ Commands:
   test             $label_test_descr
 
 Internal commands:
+  comp             $label_comp_descr
   internal-files   See 'files'.
   internal-tags    See 'tags'.
   label            $label_label_descr
@@ -63,6 +64,9 @@ EOF
       ;;
     clean)
       tss_clean "$@"
+      ;;
+    comp)
+      tss_comp "$@"
       ;;
     files|query)
       tss_files "$@"

@@ -8,19 +8,13 @@ logg() {
 }
 
 failk() {
+  if [[ $# -eq 0 ]]; then
+    failk 2 "Usage: failk <funcstack_index> <message>..."
+  fi
   local -i funcstack_index=$1
   shift
   logg "${funcstack[$((funcstack_index + 1))]}:$@"
   return 1
-}
-
-tss_util_failk() {
-  if [[ $# -eq 0 || $1 = --help ]]; then
-    failk 1 "Usage: tss util failk <funkstack_index> <message>..."
-  fi
-  local -i funcstack_index=$1
-  shift
-  failk $((funcstack_index + 3)) "$@"
 }
 
 fail() {
@@ -305,9 +299,6 @@ tss_util() {
   local command=$1
   shift
   case $command in
-    failk)
-      tss_util_failk "$@"
-      ;;
     internal-file-pattern)
       tss_util_internal_file_pattern "$@"
       ;;

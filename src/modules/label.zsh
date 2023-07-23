@@ -1,5 +1,6 @@
 local label_add_descr="Add tags to one or more files."
 local label_clean_descr="Remove tag group from one or more files."
+local label_comp_descr="Completion utilities."
 
 local label_files_descr="List files with tags matching the given patterns."
 local label_files_not_all_tags_descr="Don't output files that have tags matching all of the given patterns."
