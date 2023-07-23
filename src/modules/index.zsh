@@ -2,23 +2,10 @@
 # have a lower probability of rebuilding at the same time as TagSpaces.
 local -i index_ttl_seconds=900
 
-tss_location_index_tags() {
-  local location
-  if [[ -n $1 ]]; then
-    location=$1
-    require_is_location "$location"
-  else
-    location=$(tss_location_of_dir_unsafe ${.:a}) || fail "Not in a location"
-  fi
 
-  local index
-  index="$location/.ts/tsi.json"
-
-  # Get sorted, unique tags
-  local -a tags
-  tags=(${(f)$(jq -r '[.[].tags | .[].title] | unique | .[]' "$index")})
-  print -r -- $tags
-}
+########
+# Build
+########
 
 print_json_string() {
   local s
@@ -197,6 +184,10 @@ tss_location_index_is_fresh() {
   [[ $(zstat +mtime "$index") -gt $(($(date +%s) - $index_ttl_seconds)) ]]
 }
 
+########
+# Files
+########
+
 tss_location_index_files() {
   local -a path_opt tags_opts not_tags_opts not_all_tags_opts
   zparseopts -D -E -F - {-path,-path-starts-with}:=path_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts \
@@ -371,11 +362,46 @@ internal_location_index_files_dir_and_file_name_prefix() {
   } || return $?
 }
 
+
+#######
+# Tags
+#######
+
+tss_location_index_tags() {
+  if [[ ${1:-} = -- ]]; then
+    shift
+  fi
+  if [[ $# -ne 1 || $1 = --help ]]; then
+    fail "Usage: tss location index tags <location>"
+  fi
+  local location
+  if [[ -n $1 ]]; then
+    location=$1
+    require_is_location "$location"
+  else
+    location=$(tss_location_of_dir_unsafe ${.:a}) || fail "Not in a location"
+  fi
+
+  local index
+  index="$location/.ts/tsi.json"
+
+  # Get sorted, unique tags
+  local -a tags
+  tags=(${(f)$(jq -r '[.[].tags | .[].title] | unique | .[]' "$index")})
+  print -r -- $tags
+
+  tss_location_index_build_if_stale_async "$location"
+}
+
+
+#######
+# Main
+#######
+
 tss_location_index() {
-  local subcommand
-  subcommand=$1
+  local command=$1
   shift
-  case $subcommand in
+  case $command in
     build)
       tss_location_index_build "$@"
       ;;
@@ -389,7 +415,7 @@ tss_location_index() {
       tss_location_index_tags "$@"
       ;;
     *)
-      fail "Unknown subcommand $subcommand"
+      fail "Unknown command $command"
       ;;
   esac
 }

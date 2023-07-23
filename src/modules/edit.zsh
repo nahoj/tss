@@ -1,8 +1,8 @@
 clean_one_file() {
-  local file_path file_name
-  file_path=$1
+  local file_path=$1
   require_exists_taggable "$file_path"
-  file_name=${file_path:t}
+
+  local file_name=${file_path:t}
   local -a match mbegin mend
   if ! [[ $file_name =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
     fail "Ignoring file with ill-formed name: ${(qqq)file_path}"
@@ -56,11 +56,10 @@ EOF
 }
 
 set_file_tags() {
-  local file_path tags
-  file_path=$1
+  local file_path=$1
   require_exists_taggable "$file_path"
   shift
-  tags=($@)
+  local tags=($@)
 
   # if tags empty, clean file
   if [[ $#tags -eq 0 ]]; then
@@ -99,10 +98,9 @@ set_file_tags() {
 }
 
 tag_in_patterns() {
-  local tag patterns
-  tag=$1
+  local tag=$1
   shift
-  patterns=($@)
+  local patterns=($@)
   if [[ $#patterns -eq 0 ]]; then
     fail "No tag patterns given"
   fi

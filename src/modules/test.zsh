@@ -50,7 +50,7 @@ internal_test() {
     [[ $file_path = (*/|)${~regular_file_pattern} ]]
 
   else
-    require_exists $file_path || return 2
+    require_exists_quietable $file_path || return 2
     if [[ -f $file_path ]]; then
       [[ $file_path = (*/|)${~regular_file_pattern} ]]
     else

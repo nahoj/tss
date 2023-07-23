@@ -1,21 +1,21 @@
-#_tss_comp_log() {
-#  if [[ ${TSS_DEBUG:-} ]]; then
-#    print -r -- "$@" >>tss-comp.log
-#  fi
-#}
-#
-#_tss_comp_logl() {
-#  if [[ ${TSS_DEBUG:-} ]]; then
-#    print -rl -- "$@" >>tss-comp.log
-#  fi
-#}
+tss_comp_log() {
+  if [[ ${TSS_DEBUG:-} ]]; then
+    print -r -- "$@" >>tss-debug.log
+  fi
+}
+
+tss_comp_logl() {
+  if [[ ${TSS_DEBUG:-} ]]; then
+    print -rl -- "$@" >>tss-debug.log
+  fi
+}
 
 tss_comp_require_parameter() {
   if [[ ${TSS_DEBUG:-} ]]; then
     if [[ ! -v $1 ]]; then
-      failk 2 "Parameter ${(qq)1} must be set"
+      failk 4 "Parameter ${(qq)1} must be set"
     elif [[ ${(t)${(P)1}} != ${~2} ]]; then
-      failk 2 "Parameter ${(qq)1} must have type ${(qq)2}"
+      failk 4 "Parameter ${(qq)1} must have type ${(qq)2}"
     fi
   fi
 }
@@ -106,6 +106,12 @@ tss_comp() {
       ;;
     internal-parse-patterns-opt-args)
       tss_comp_internal_parse_patterns_opt_args "$@"
+      ;;
+    log)
+      tss_comp_log "$@"
+      ;;
+    logl)
+      tss_comp_logl "$@"
       ;;
     require-parameter)
       tss_comp_require_parameter "$@"

@@ -3,17 +3,36 @@
 # General utils
 ###############
 
+logkq() {
+  local -i k=$1
+  shift
+  if [[ ${quiet:-} ]]; then
+    if [[ ${TSS_DEBUG:-} ]]; then
+      print -r -- "tss:${funcstack[k+1]}:$@" >>tss-debug.log
+    fi
+  else
+    print -r -- "tss:${funcstack[k+1]}:$@" >&2
+  fi
+}
+
+logk() {
+  local -i k=$1
+  shift
+  local -r quiet=
+  logkq $((k + 1)) "$@"
+}
+
 logg() {
-  print -r -- "tss:$@" >&2
+  logk 2 "$@"
 }
 
 failk() {
   if [[ $# -eq 0 ]]; then
     failk 2 "Usage: failk <funcstack_index> <message>..."
   fi
-  local -i funcstack_index=$1
+  local -i k=$1
   shift
-  logg "${funcstack[$((funcstack_index + 1))]}:$@"
+  logk $((k + 1)) "$@"
   return 1
 }
 
@@ -98,8 +117,7 @@ always_with_trap_INT() {
 }
 
 with_cd() {
-  local dir
-  dir=$1
+  local dir=$1
   shift
 
   local return_dir
@@ -111,8 +129,7 @@ with_cd() {
 }
 
 with_lock_file() {
-  local file
-  file=$1
+  local file=$1
   shift
 
   local lock_file
@@ -173,21 +190,27 @@ local file_name_maybe_tag_group_regex='^([^[]*)(\[([^]]*)\])?(.*)$'
 local well_formed_file_name_maybe_tag_group_regex='^([^][]*)(\[([^][]*)\])?([^][]*)$'
 
 require_does_not_exist() {
-  local file_path
-  file_path=$1
+  local file_path=$1
 
   if [[ -e $file_path ]]; then
     failk 2 "File already exists: ${(qqq)file_path}"
   fi
 }
 
-require_exists() {
-  local pathh
-  pathh=$1
+require_exists_quietable() {
+  local pathh=$1
 
   if [[ ! -e $pathh ]]; then
-    failk 2 "No such file or directory: ${(qqq)pathh}"
+    if [[ ! ${quiet:-} ]]; then
+      logkq 2 "No such file or directory: ${(qqq)pathh}"
+    fi
+    return 1
   fi
+}
+
+require_exists() {
+  local -r quiet=
+  require_exists_quietable "$@"
 }
 
 require_directory() {
@@ -198,8 +221,7 @@ require_directory() {
 }
 
 require_exists_taggable() {
-  local file_path
-  file_path=$1
+  local file_path=$1
 
   require_exists "$file_path"
 
@@ -209,8 +231,7 @@ require_exists_taggable() {
 }
 
 require_well_formed() {
-  local file_path
-  file_path=$1
+  local file_path=$1
 
   local -a match mbegin mend
   if [[ ! $file_path =~ $well_formed_file_name_maybe_tag_group_regex ]]; then
@@ -219,8 +240,7 @@ require_well_formed() {
 }
 
 require_tag_valid() {
-  local tag
-  tag=$1
+  local tag=$1
 
   # if $tag contains ] or [ or etc.
   if [[ "$tag" =~ '[][/[:cntrl:][:space:]]' ]]; then

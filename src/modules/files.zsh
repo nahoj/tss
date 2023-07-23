@@ -1,6 +1,6 @@
 tss_files() {
-  local help tags_opts not_tags_opts not_all_tags_opts
-  zparseopts -D -E -F - -help=help {t,-tags}+:=tags_opts \
+  local help quiet_opts tags_opts not_tags_opts not_all_tags_opts
+  zparseopts -D -E -F - -help=help {q,-quiet}=quiet_opts {t,-tags}+:=tags_opts \
     {T,-not-tags}+:=not_tags_opts -not-all-tags+:=not_all_tags_opts
 
   if [[ -n $help ]]; then
@@ -11,6 +11,7 @@ Usage: tss files [options] [--] [<path>...]
 List files under the given path(s), or under the current directory if no path is given.
 
 Options:
+  -q, --quiet                   $label_generic_quiet_descr
   -t, --tags <pattern...>       $label_files_tags_descr
   -T, --not-tags <pattern...>   $label_files_not_tags_descr
   --not-all-tags <pattern...>   $label_files_not_all_tags_descr
@@ -21,6 +22,7 @@ EOF
   fi
 
   # Process options
+  local quiet=$quiet_opts
   local regular_file_pattern accept_non_regular
   internal_file_pattern_parse_tag_opts
 
@@ -36,7 +38,7 @@ EOF
 
   local files=()
   {
-    internal_files
+    tss_internal_files
   } always {
     if [[ $files ]]; then
       print -rl -- ${(in)files}
@@ -44,7 +46,7 @@ EOF
   }
 }
 
-internal_files() {
+tss_internal_files() {
   require_parameter paths 'array*'
   require_parameter regular_file_pattern 'scalar*'
   require_parameter accept_non_regular 'scalar*'
@@ -55,8 +57,9 @@ internal_files() {
 
   files=()
   local pathh file_path error
+  local name_only= # For internal_test
   for pathh in $paths; do
-    require_exists "$pathh" || error=x
+    require_exists_quietable "$pathh" || error=x
 
     if [[ -d $pathh ]]; then
       files+=("${pathh%/}"/**/${~regular_file_pattern}(.))
@@ -66,7 +69,7 @@ internal_files() {
 
     else
       file_path=$pathh
-      if [[ internal_test ]]; then
+      if internal_test; then
         files+=("$pathh")
       fi
     fi

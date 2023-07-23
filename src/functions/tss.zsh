@@ -76,10 +76,10 @@ EOF
       tss_filter "$@"
       ;;
     internal-files)
-      internal_files "$@"
+      tss_internal_files "$@"
       ;;
     internal-tags)
-      internal_tags "$@"
+      tss_internal_tags "$@"
       ;;
     label)
       tss_label "$@"

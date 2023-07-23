@@ -15,6 +15,7 @@ local label_filter_tags_descr=$label_files_tags_descr
 
 local label_generic_completion_help_descr="Show help message."
 local label_generic_help_help_descr="Show this help message."
+local label_generic_quiet_descr="Don't print non-fatal errors."
 
 local label_label_descr="App labels (parameter descriptions etc.)."
 local label_location_descr="Work with Locations."
