@@ -25,89 +25,45 @@ EOF
   fi
 
   # Process options
-  local use_index
-  internal_parse_index_mode_opt
-  local -aU patterns anti_patterns not_all_patterns
-  internal_parse_tag_opts
+  local regular_file_pattern accept_non_regular
+  internal_file_pattern_parse_tag_opts
 
   # Process positional arguments
   if [[ ${1:-} = '--' ]]; then
     shift
   fi
-  local paths location
+  local paths
   if [[ $# -eq 0 ]]; then
     paths=(*(N))
-    location=$(tss_location_of .) || true
   else
     paths=("$@")
-    location=$(tss_location_of "$1") || true
   fi
 
   internal_files
 }
 
 internal_files() {
-  require_parameter location 'scalar*'
-  require_parameter use_index 'scalar*'
   require_parameter paths 'array*'
+  require_parameter regular_file_pattern 'scalar*'
+  require_parameter accept_non_regular 'scalar*'
 
-  require_parameter patterns 'array*'
-  require_parameter anti_patterns 'array*'
-  require_parameter not_all_patterns 'array*'
+  local pathh files file_path error
+  for pathh in $paths; do
+    require_exists "$pathh" || error=x
 
-  if [[ $use_index != no && $location ]]; then
-    if [[ $use_index = yes ]] || tss_location_index_is_fresh $location; then
-      local pathh error
-      for pathh in $paths; do
-        require_exists "$pathh" || error=x
-        if [[ -f $pathh ]]; then
-          () {
-            local -r name_only=x file_path=$pathh
-            if internal_test; then
-              print -r -- "$pathh"
-            fi
-          }
-        elif [[ -d $pathh ]]; then
-          internal_location_index_files_path $location
-        # Not a regular file = don't print
-        fi
-      done
-      internal_location_index_build_if_stale_async
-      [[ ! $error ]]
+    if [[ -d $pathh ]]; then
+      files=("${pathh%/}"/**/${~regular_file_pattern}(.N))
+      if [[ $accept_non_regular ]]; then
+        files+=("${pathh%/}"/**/*(N^.))
+      fi
+      print -rl -- ${(in)files}
 
     else
-      internal_files_in_paths_no_index
-      internal_location_index_build_if_stale_async
-    fi
-
-  else
-    internal_files_in_paths_no_index
-  fi
-}
-
-internal_files_in_paths_no_index() {
-  require_parameter patterns 'array*'
-  require_parameter anti_patterns 'array*'
-  require_parameter not_all_patterns 'array*'
-  require_parameter paths 'array*'
-
-  {
-    local pathh file_path error
-    for pathh in $paths; do
-      require_exists "$pathh" || error=x
-      if [[ -f $pathh ]]; then
-        print -r -- $pathh
-      elif [[ -d $pathh ]]; then
-        for file_path in "$pathh"/**/*(.N); do
-          print -r -- "$file_path"
-        done
+      file_path=$pathh
+      if [[ internal_test ]]; then
+        print -r -- "$pathh"
       fi
-    done
-    [[ ! $error ]]
-
-   } | {
-    local -r name_only=x
-    internal_filter
-
-  } || return $?
+    fi
+  done
+  [[ ! $error ]]
 }

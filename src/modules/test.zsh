@@ -23,8 +23,8 @@ EOF
 
   # Process options
   local name_only=$name_only_opt
-  local -aU patterns anti_patterns not_all_patterns
-  internal_parse_tag_opts
+  local regular_file_pattern accept_non_regular
+  internal_file_pattern_parse_tag_opts
 
   # Process positional arguments
   if [[ ${1:-} = '--' ]]; then
@@ -42,51 +42,19 @@ EOF
 
 internal_test() {
   require_parameter name_only 'scalar*' || return 2
-  require_parameter patterns 'array*' || return 2
-  require_parameter anti_patterns 'array*' || return 2
-  require_parameter not_all_patterns 'array*' || return 2
+  require_parameter regular_file_pattern 'scalar*' || return 2
+  require_parameter accept_non_regular 'scalar*' || return 2
   require_parameter file_path 'scalar*' || return 2
 
-  local tags pattern tag
-  tags=(${(s: :)$(internal_file_tags)}) || return 2
+  if [[ $name_only ]]; then
+    [[ $file_path = (*/|)${~regular_file_pattern} ]]
 
-  for pattern in $patterns; do
-    for tag in $tags; do
-      if [[ $tag = ${~pattern} ]]; then
-        # pattern OK
-        continue 2
-      fi
-    done
-    # file KO
-    return 1
-  done
-
-  for pattern in $anti_patterns; do
-    for tag in $tags; do
-      if [[ $tag = ${~pattern} ]]; then
-        # file KO
-        return 1
-      fi
-    done
-    # pattern OK
-  done
-  # file OK
-
-  if [[ $#not_all_patterns -gt 0 ]]; then
-    local unmatched_pattern_found=
-    for pattern in $not_all_patterns; do
-      for tag in $tags; do
-        if [[ $tag = ${~pattern} ]]; then
-          continue 2
-        fi
-      done
-      unmatched_pattern_found=x
-      break
-    done
-    if [[ ! $unmatched_pattern_found ]]; then
-      return 1
+  else
+    require_exists $file_path || return 2
+    if [[ -f $file_path ]]; then
+      [[ $file_path = (*/|)${~regular_file_pattern} ]]
+    else
+      [[ $accept_non_regular ]]
     fi
   fi
-
-  return 0
 }

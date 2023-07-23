@@ -21,8 +21,8 @@ EOF
 
   # Process options
   local name_only=$name_only_opt
-  local -aU patterns anti_patterns not_all_patterns
-  internal_parse_tag_opts
+  local regular_file_pattern accept_non_regular
+  internal_file_pattern_parse_tag_opts
 
   # Reject positional arguments
   if [[ ${1:-} = '--' ]]; then
@@ -36,11 +36,11 @@ EOF
 }
 
 internal_filter() {
-  require_parameter patterns 'array*'
-  require_parameter anti_patterns 'array*'
-  require_parameter not_all_patterns 'array*'
+  require_parameter name_only 'scalar*'
+  require_parameter regular_file_pattern 'scalar*'
+  require_parameter accept_non_regular 'scalar*'
 
-  if [[ $#patterns -eq 0 && $#anti_patterns -eq 0 && $#not_all_patterns -eq 0 ]]; then
+  if [[ $regular_file_pattern = '*' && $accept_non_regular ]]; then
     cat
     return 0
   fi

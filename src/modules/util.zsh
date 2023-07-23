@@ -258,54 +258,86 @@ require_tag_valid() {
   fi
 }
 
-tss_util_file_with_not_all_tags_pattern() {
-  if [[ $# -eq 0 ]]; then
-    fail "Usage: tss util file-with-not-all-tags-pattern <pattern>..."
-  fi
-  local patterns=($@)
+###############
+# Pattern utils
+###############
 
-  local p allowed_file_patterns=()
-  for p in $patterns; do
-    if [[ $p = *[[:space:]]* ]]; then
-      fail "Invalid pattern (contains whitespace): ${(qqqq)p}"
-    fi
-    allowed_file_patterns+=("^(*[[](* |)($p)( *|)[]]*)")
-  done
-  print -r "(${(j:|:)allowed_file_patterns})(.)"
+tss_util_internal_file_pattern() {
+  require_parameter patterns 'array*'
+  require_parameter anti_patterns 'array*'
+  require_parameter not_all_patterns 'array*'
+
+  require_parameter regular_file_pattern 'scalar*'
+  require_parameter accept_non_regular 'scalar*'
+
+  unsetopt warn_nested_var
+
+  local IFS=$'\n'
+
+  group_with_tag() {
+    local pattern
+    for pattern in $@; do
+      # Don't use a literal space because of this bug in _files:
+      # https://www.zsh.org/mla/workers/2023/msg00667.html
+      print -r -- "(*[[:space:]]|)${pattern}([[:space:]]*|)"
+    done
+  }
+
+  and() {
+    [[ $@ ]]
+    print -r -- "(${(j:)~^(:)@})"
+  }
+
+  or() {
+    [[ $@ ]]
+    print -r -- "(${(j:|:)@})"
+  }
+
+  file_with_group() {
+    print -r -- "*[[]${1}[]]*"
+  }
+
+  if [[ $patterns ]]; then
+    regular_file_pattern=$(file_with_group "($(and $(group_with_tag $patterns)))")
+    accept_non_regular=
+  else
+    regular_file_pattern="*"
+    accept_non_regular=x
+  fi
+  if [[ $anti_patterns ]]; then
+    regular_file_pattern+="~$(file_with_group $(or $(group_with_tag $anti_patterns)))"
+  fi
+  if [[ $not_all_patterns ]]; then
+    regular_file_pattern+="~$(file_with_group "($(and $(group_with_tag $not_all_patterns)))")"
+  fi
 }
 
-tss_util_file_with_tag_pattern() {
-  if [[ $# -ne 1 ]]; then
-    fail "Usage: tss util file-with-tag-pattern <pattern>"
-  fi
-  local p
-  p=$1
-  if [[ $p = *[[:space:]]* ]]; then
-    fail "Invalid pattern (contains whitespace); please provide a pattern for a single tag."
-  fi
-
-  print -r "*[[](* |)($p)( *|)[]]*(.)"
+internal_file_pattern_parse_tag_opts() {
+  local -aU patterns anti_patterns not_all_patterns
+  internal_parse_tag_opts
+  tss_util_internal_file_pattern
 }
+
+
+######
+# Main
+######
 
 tss_util() {
-  local subcommand
-  subcommand=$1
+  local command=$1
   shift
-  case $subcommand in
+  case $command in
     failk)
       tss_util_failk "$@"
       ;;
-    file-with-not-all-tags-pattern)
-      tss_util_file_with_not_all_tags_pattern "$@"
-      ;;
-    file-with-tag-pattern)
-      tss_util_file_with_tag_pattern "$@"
+    internal-file-pattern)
+      tss_util_internal_file_pattern "$@"
       ;;
     is-valid-pattern)
       is_valid_pattern "$@"
       ;;
     *)
-      fail "Unknown subcommand: $subcommand"
+      fail "Unknown command: $command"
       ;;
   esac
 }

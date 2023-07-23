@@ -44,8 +44,8 @@ EOF
   require_valid_patterns $not_matching_patterns
   local not_matching_pattern="((${(j:|:)not_matching_patterns}))"
 
-  local -aU patterns anti_patterns not_all_patterns
-  internal_parse_tag_opts
+  local regular_file_pattern accept_non_regular
+  internal_file_pattern_parse_tag_opts
 
   # Process positional arguments
   if [[ ${1:-} = '--' ]]; then
@@ -70,9 +70,8 @@ internal_tags() {
   require_parameter stdin 'scalar*'
 
   require_parameter name_only 'scalar*'
-  require_parameter patterns 'array*'
-  require_parameter anti_patterns 'array*'
-  require_parameter not_all_patterns 'array*'
+  require_parameter regular_file_pattern 'scalar*'
+  require_parameter accept_non_regular 'scalar*'
 
   require_parameter not_matching_pattern 'scalar*'
 

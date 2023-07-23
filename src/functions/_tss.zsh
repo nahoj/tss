@@ -2,6 +2,22 @@
 
 # Description: Zsh completion script for the 'tss' command
 
+###############
+# General utils
+###############
+
+_tss_comp_log() {
+  if [[ ${TSS_DEBUG:-} ]]; then
+    print -r -- "$@" >>tss-comp.log
+  fi
+}
+
+_tss_comp_logl() {
+  if [[ ${TSS_DEBUG:-} ]]; then
+    print -rl -- "$@" >>tss-comp.log
+  fi
+}
+
 _tss_comp_require_parameter() {
   if [[ ${TSS_DEBUG:-} ]]; then
     if [[ ! -v $1 ]]; then
@@ -35,120 +51,9 @@ _tss_comp_escape_values() {
 }
 
 
-##################
-# Edit subcommands
-##################
-
-_tss_add() {
-  local curcontext=$curcontext state state_descr line
-  local -A opt_args
-
-  files() {
-    # Offer files that don't have all the tags
-    local -aU tags=(${(s: :)${(Q)line[1]}})
-    local patterns=() anti_patterns=()
-    local not_all_patterns(${(b)tags[@]})
-    _tss_internal_comp_files
-  }
-
-  _arguments -s -C -S : \
-             "-C[$(tss label generic_C_descr)]" \
-             ':tags:->tags' \
-             '*:file:files' # let _arguments handle status != 0 on an option
-
-  setopt -m $tss_comp_shell_option_patterns
-
-  case "$state" in
-    tags)
-      # One or more tags separated by spaces
-      local location
-      local -aU tags
-      if location=$(tss location of .); then
-        tags=(${(s: :)$(tss location index tags "$location")})
-      else
-        # All tags in the current directory
-        local f
-        for f in *(.N); do
-          tags+=(${(s: :)$(tss tags "$f")})
-        done
-      fi
-      if [[ $tags ]]; then
-        local values
-        values=(${(f)$(_tss_comp_escape_values $tags)})
-        unsetopt -m $tss_comp_shell_option_patterns
-        _values -s ' ' "tag" $values
-      else
-        return 1
-      fi
-      ;;
-  esac
-}
-
-# tss clean takes one or more files as positional arguments
-_tss_clean() {
-  local curcontext=$curcontext state state_descr line
-  local -A opt_args
-
-  _arguments -s -C -S : \
-             '*::file:->files'
-
-  case "$state" in
-    files)
-      # Regular files with a tag group
-      _path_files -g '**/*[[]*[]]*(.)'
-      ;;
-  esac
-}
-
-_tss_remove() {
-  local curcontext=$curcontext state state_descr line
-  local -A opt_args
-
-  files() {
-    # Offer files that have any tag matching any of the given patterns
-    local -aU arg_patterns=(${(s: :)${(Q)line[1]}})
-    local -r patterns=("((${(j:|:)arg_patterns}))")
-    local -r anti_patterns=() not_all_patterns=()
-    _tss_internal_comp_files
-  }
-
-  _arguments -s -C -S : \
-             "-C[$(tss label generic_C_descr)]" \
-             ':patterns:->tags' \
-             '*:file:files' # let _arguments handle status != 0 on an option
-
-  setopt -m $tss_comp_shell_option_patterns
-
-  case "$state" in
-    tags)
-      # One or more tag patterns separated by spaces; we offer existing tags
-      local location
-      local -aU tags
-      if location=$(tss location of .); then
-        tags=(${(s: :)$(tss location index tags "$location")})
-      else
-        # All tags in the current directory
-        local f
-        for f in *(.N); do
-          tags+=(${(s: :)$(tss tags "$f")})
-        done
-      fi
-      if [[ $tags ]]; then
-        local values
-        values=(${(f)$(_tss_comp_escape_values $tags)})
-        unsetopt -m $tss_comp_shell_option_patterns
-        _values -s ' ' "tag" $values
-      else
-        return 1
-      fi
-      ;;
-  esac
-}
-
-
-###################
-# Query subcommands
-###################
+####################
+# File and tag utils
+####################
 
 _tss_internal_comp_parse_index_mode() {
   _tss_comp_require_parameter use_index 'scalar*'
@@ -234,6 +139,8 @@ _tss_internal_comp_get_tags() {
 
   local -a patterns anti_patterns not_all_patterns
   _tss_internal_comp_parse_all_patterns_opt_args
+  local regular_file_pattern accept_non_regular
+  tss util internal-file-pattern
   local -r not_matching_pattern="(${(j:|:)patterns}|${(j:|:)anti_patterns})"
 
   local -r stdin=
@@ -245,72 +152,44 @@ _tss_internal_comp_files() {
   _tss_comp_require_parameter anti_patterns 'array*'
   _tss_comp_require_parameter not_all_patterns 'array*'
 
-  if [[ -v opt_args[-C] ]]; then
-    # Fall back to calling _files, with a mega-pattern to filter files
-    local IFS=$'\n'
-    in_tag_group() {
-      local pattern
-      for pattern in $@; do
-        # Don't use a literal space because of this bug in _files:
-        # https://www.zsh.org/mla/workers/2023/msg00667.html
-        print -r -- "(*[[:space:]]|)${pattern}([[:space:]]*|)"
-      done
-    }
-    and() {
-      [[ $@ ]]
-      print -r -- "(${(j:)~^(:)@})"
-    }
-    or() {
-      [[ $@ ]]
-      print -r -- "(${(j:|:)@})"
-    }
-    file_with_group() {
-      print -r -- "*[[]${1}[]]*"
-    }
-    local file_pattern
-    if [[ $patterns ]]; then
-      file_pattern=$(file_with_group "($(and $(in_tag_group $patterns)))")
-    else
-      file_pattern="*"
-    fi
-    if [[ $anti_patterns ]]; then
-      file_pattern+="~$(file_with_group $(or $(in_tag_group $anti_patterns)))"
-    fi
-    if [[ $not_all_patterns ]]; then
-      file_pattern+="~$(file_with_group "($(and $(in_tag_group $not_all_patterns)))")"
-    fi
-    unsetopt -m $tss_comp_shell_option_patterns
-    _files -g "$file_pattern"
-
+  local dir_pattern
+  if [[ ${(Q)words[$CURRENT]} != */* ]]; then
+    dir_pattern="**/"
+  elif [[ ${(Q)words[$CURRENT]} = */ ]]; then
+    dir_pattern="${(Q)words[$CURRENT]}**/"
   else
-    local dir
-    if [[ ${(Q)words[$CURRENT]} = */ ]]; then
-      dir=${(Q)words[$CURRENT]}
-    else
-      dir=${${(Q)words[$CURRENT]}:h}
-    fi
-    local location
-    location=$(tss location of $dir) || true
-    local use_index
-    _tss_internal_comp_parse_index_mode
-    local -r paths=(${(Q)words[$CURRENT]}*(N))
-    local -a files
-    files=(${(f)$(tss internal-files)})
-    unsetopt -m $tss_comp_shell_option_patterns
-    _multi_parts -f - / files
+    dir_pattern="${${(Q)words[$CURRENT]}:h}/**/"
   fi
+
+  local regular_file_pattern accept_non_regular
+  tss util internal-file-pattern
+
+  # (null_glob is in effect)
+  local files=(${~dir_pattern}${~regular_file_pattern}(.))
+  if [[ $accept_non_regular ]]; then
+    files+=(${~dir_pattern}*(^.))
+  fi
+  _tss_comp_logl files_head: $files[1,10]
+
+  unsetopt -m $tss_comp_shell_option_patterns
+#    local expl
+#    _wanted files expl 'files'
+  _multi_parts -f - / files
 }
 
-_tss_files() {
-  local curcontext=$curcontext state state_descr line
-  local -A opt_args
+################
+# Query commands
+################
 
+_tss_files() {
   files() {
     local -a patterns anti_patterns not_all_patterns
     _tss_internal_comp_parse_all_patterns_opt_args
     _tss_internal_comp_files
   }
 
+  local curcontext=$curcontext state state_descr line
+  local -A opt_args
   _arguments -s -C -S : \
              "-C[$(tss label generic_C_descr)]" \
              "--help[$(tss label generic_completion_help_descr)]" \
@@ -468,6 +347,115 @@ _tss_test() {
 }
 
 
+###############
+# Edit commands
+###############
+
+_tss_add() {
+  files() {
+    # Offer files that don't have all the tags
+    local -aU tags=(${(s: :)${(Q)line[1]}})
+    local patterns=() anti_patterns=()
+    local not_all_patterns(${(b)tags[@]})
+    _tss_internal_comp_files
+  }
+
+  local curcontext=$curcontext state state_descr line
+  local -A opt_args
+  _arguments -s -C -S : \
+             "-C[$(tss label generic_C_descr)]" \
+             ':tags:->tags' \
+             '*:file:files' # let _arguments handle status != 0 on an option
+
+  setopt -m $tss_comp_shell_option_patterns
+
+  case "$state" in
+    tags)
+      # One or more tags separated by spaces
+      local location
+      local -aU tags
+      if location=$(tss location of .); then
+        tags=(${(s: :)$(tss location index tags "$location")})
+      else
+        # All tags in the current directory
+        local f
+        for f in *(.N); do
+          tags+=(${(s: :)$(tss tags "$f")})
+        done
+      fi
+      if [[ $tags ]]; then
+        local values
+        values=(${(f)$(_tss_comp_escape_values $tags)})
+        unsetopt -m $tss_comp_shell_option_patterns
+        _values -s ' ' "tag" $values
+      else
+        return 1
+      fi
+      ;;
+  esac
+}
+
+# tss clean takes one or more files as positional arguments
+_tss_clean() {
+  local curcontext=$curcontext state state_descr line
+  local -A opt_args
+
+  _arguments -s -C -S : \
+             '*::file:->files'
+
+  case "$state" in
+    files)
+      # Regular files with a tag group
+      _path_files -g '**/*[[]*[]]*(.)'
+      ;;
+  esac
+}
+
+_tss_remove() {
+  files() {
+    # Offer files that have any tag matching any of the given patterns
+    local -aU arg_patterns=(${(s: :)${(Q)line[1]}})
+    local -r patterns=("((${(j:|:)arg_patterns}))")
+    local -r anti_patterns=() not_all_patterns=()
+    _tss_internal_comp_files
+  }
+
+  local curcontext=$curcontext state state_descr line
+  local -A opt_args
+  _arguments -s -C -S : \
+             "-C[$(tss label generic_C_descr)]" \
+             ':patterns:->tags' \
+             '*:file:files' # let _arguments handle status != 0 on an option
+
+  setopt -m $tss_comp_shell_option_patterns
+
+  case "$state" in
+    tags)
+      # One or more tag patterns separated by spaces; we offer existing tags
+      local location
+      local -aU tags
+      if location=$(tss location of .); then
+        tags=(${(s: :)$(tss location index tags "$location")})
+      else
+        # All tags in the current directory
+        local f
+        for f in *(.N); do
+          tags+=(${(s: :)$(tss tags "$f")})
+        done
+      fi
+      if [[ $tags ]]; then
+        local values
+        values=(${(f)$(_tss_comp_escape_values $tags)})
+        unsetopt -m $tss_comp_shell_option_patterns
+        _values -s ' ' "tag" $values
+      else
+        return 1
+      fi
+      ;;
+  esac
+}
+
+
 ####################
 # Location and index
 ####################
@@ -581,12 +569,14 @@ _tss_util() {
   case "$state" in
     cmds)
       _values "tss-util command" \
-              "file-with-not-all-tags-pattern[Output a glob pattern matching any file whose tags don't match all the fiven patterns]" \
-              "file-with-tag-pattern[Output a glob pattern matching any file with a tag matching the given pattern]" \
+              "failk" \
+              "internal-file-pattern" \
+              "is-valid-pattern" \
       ;;
     args)
       case ${(Q)line[1]} in
-        file-with-tag-pattern)
+        *)
+          return 1
           ;;
       esac
       ;;

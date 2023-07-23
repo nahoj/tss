@@ -11,6 +11,8 @@ tss() {
   # combining err_return with pipe_fail in zsh <= 5.9:
   # https://www.zsh.org/mla/workers/2023/msg00633.html
 
+  setopt extended_glob
+
   local IFS=
 
   zmodload -F zsh/stat b:zstat
