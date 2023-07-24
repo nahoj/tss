@@ -60,9 +60,8 @@ tss_internal_tags() {
   require_parameter regular_file_pattern 'scalar*'
   require_parameter not_matching_pattern 'scalar*'
 
-  require_parameter tags 'array*'
-
   unsetopt warn_nested_var
+  require_parameter tags 'array*'
 
   local error=
 
@@ -93,9 +92,9 @@ tss_internal_tags() {
 # Return the tags of the given file path, without checking whether the file exists and is taggable.
 internal_file_tags_name_only() {
   require_parameter file_path 'scalar*'
-  require_parameter file_tags 'array*'
 
   unsetopt warn_nested_var
+  require_parameter file_tags 'array*'
 
   local -a match mbegin mend
   [[ ${file_path:t} =~ $file_name_maybe_tag_group_regex ]]

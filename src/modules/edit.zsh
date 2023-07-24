@@ -148,9 +148,49 @@ internal_add_remove_one_file() {
 }
 
 internal_add_remove() {
-  require_parameter add_tags 'array*'
-  require_parameter remove_patterns 'array*'
-  require_parameter file_paths 'array*'
+  require_parameter action 'scalar*'
+  require_parameter tags_opts 'array*'
+
+  if [[ ${1:-} = -- ]]; then
+    shift
+  fi
+  if [[ $# -lt 2 ]]; then
+    fail "Expected at least 2 positional arguments, got $#."
+  fi
+
+  # Get tags or patterns from options and first positional argument
+  local opt_tags_or_patterns=()
+  local -i i
+  for ((i=2; i <= $#tags_opts; i+=2)); do
+    opt_tags_or_patterns+=(${(s: :)tags_opts[i]})
+  done
+
+  case $action in
+    add)
+      local -aU add_tags=($opt_tags_or_patterns ${(s: :)1}) remove_patterns=()
+      local tag
+      for tag in $add_tags; do
+        require_tag_valid "$tag"
+      done
+      ;;
+
+    remove)
+      local -aU add_tags=() remove_patterns=($opt_tags_or_patterns ${(s: :)1})
+      require_valid_patterns $remove_patterns
+      if ((remove_patterns[(Ie)*])); then
+        logg "Removing all tags with * is forbidden as it might be a mistake. If this is what you want to do, use:"
+        logg "    tss file clean <file> ..."
+        return 1
+      fi
+      ;;
+    *)
+      fail "Invalid action: $action"
+      ;;
+  esac
+  shift
+
+  # Remaining positional arguments are file paths
+  local file_paths=($@)
 
   local file_path error
   for file_path in $file_paths; do
@@ -158,7 +198,7 @@ internal_add_remove() {
   done
 
   local location
-  if location=$(tss_location_of "${file_paths[1]:h}"); then
+  if location=$(tss_location_of "${file_paths[1]:h}"); then # :h because the file has likely been renamed
     internal_location_index_build_if_stale_async
   fi
 
@@ -166,70 +206,48 @@ internal_add_remove() {
 }
 
 tss_add() {
-  local help
-  zparseopts -D -E -F - -help=help
+  local help tags_opts
+  zparseopts -D -E -F - -help=help {t,-tags}+:=tags_opts
 
   if [[ -n $help ]]; then
     cat <<EOF
 
-Usage: tss add '<tag> ...' <file>...
+Usage: tss add [<options>] [--] '<tag> ...' <file>...
+or:    tss add '' <file>... -t '<tag> ...'  # to get filtered tag suggestions
 
 Add one or more tags to one or more files if not already present.
 
+Options:
+  -t, --tags <tag ...>  $label_add_tags_descr
+  --help                $label_generic_help_help_descr
 EOF
     return 0
   fi
 
-  if [[ ${1:-} = -- ]]; then
-    shift
-  fi
-  if [[ $# -lt 2 ]]; then
-    fail "At least 2 argument expected"
-  fi
-  local add_tags tag file_paths
-  add_tags=(${(s: :)1})
-  for tag in $add_tags; do
-    require_tag_valid "$tag"
-  done
-  shift
-  file_paths=($@)
-
-  local remove_patterns=()
-  internal_add_remove
+  local -r action=add
+  internal_add_remove "$@"
 }
 
 tss_remove() {
-  local help
-  zparseopts -D -E -F - -help=help
+  local help tags_opts
+  zparseopts -D -E -F - -help=help {t,-tags}+:=tags_opts
 
   if [[ -n $help ]]; then
     cat <<EOF
 
-Usage: tss remove '<pattern> ...' <file>...
+Usage: tss remove [<options>] [--] '<pattern> ...' <file>...
+or:    tss remove '' <file>... -t '<pattern> ...'  # to get filtered tag suggestions
 
 Remove all tags matching any of the given patterns from one or more files.
+
+Options:
+  -t, --tags <pattern ...>      $label_remove_tags_descr
+  --help                        $label_generic_help_help_descr
 
 EOF
     return 0
   fi
 
-  if [[ ${1:-} = -- ]]; then
-    shift
-  fi
-  if [[ $# -lt 2 ]]; then
-    fail "At least 2 argument expected"
-  fi
-  local remove_patterns file_paths
-  remove_patterns=(${(s: :)1})
-  require_valid_patterns $remove_patterns
-  if ((remove_patterns[(Ie)*])); then
-    logg "Removing all tags with * is forbidden as it might be a mistake. If this is what you want to do, use:"
-    logg "    tss file clean <file> ..."
-    return 1
-  fi
-  shift
-  file_paths=($@)
-
-  local add_tags=()
-  internal_add_remove
+  local -r action=remove
+  internal_add_remove "$@"
 }

@@ -60,7 +60,32 @@ _tss_comp_internal_files() {
   _multi_parts -f - / files
 }
 
-_tss_comp_internal_get_tags() {
+_tss_comp_internal_get_all_tags() {
+  tss comp require-parameter paths 'array*'
+
+  unsetopt warn_nested_var
+  tss comp require-parameter tags 'array*'
+
+  # Get location tags, if we're in a location
+  local -a paths=(${paths:-.})
+  local location
+  if location=$(tss location of "$paths[1]"); then
+    tss location index internal-tags "$location"
+  else
+    local -r regular_file_pattern='*' not_matching_pattern=
+    tss internal-tags
+  fi
+
+  # Get common tags from environment variables (arrays whose name starts with 'tss_tags_')
+  local param
+  for param in ${(o)parameters[(I)tss_tags_*]}; do
+    if [[ ${(Pt)param} = array* ]]; then
+      tags+=(${(P)param})
+    fi
+  done
+}
+
+_tss_comp_internal_get_file_tags() {
   tss comp require-parameter paths 'array*'
   tss comp require-parameter tags 'array*'
 
@@ -74,6 +99,11 @@ _tss_comp_internal_get_tags() {
   local -r not_matching_pattern="(${(j:|:)patterns}|${(j:|:)anti_patterns})"
   local -r quiet=x
   tss internal-tags
+}
+
+_tss_comp_internal_tags() {
+  tss comp require-parameter tags 'array*'
+  _tss_comp_raw_values_sep ' ' "tags" $tags
 }
 
 ################
@@ -103,8 +133,8 @@ _tss_files() {
       # If no path is (yet) known, list all tags in the current directory's location, if it is in one
       local -r paths=(${(Q)line[@]:-.})
       local -a tags
-      _tss_comp_internal_get_tags
-      _tss_comp_raw_values_sep ' ' "tag" $tags
+      _tss_comp_internal_get_file_tags
+      _tss_comp_internal_tags
       ;;
   esac
 }
@@ -173,12 +203,12 @@ _tss_tags() {
             ;;
           *)
             convert_opt_args
-            _tss_comp_internal_get_tags
+            _tss_comp_internal_get_file_tags
             ;;
         esac
         )})
 
-      _tss_comp_raw_values_sep ' ' "tag" $tags
+      _tss_comp_internal_tags
       ;;
   esac
 }
@@ -188,9 +218,9 @@ _tss_test_tags() {
   location=$(tss location of .)
   local -r paths=(${location:-.})
   local -r name_only=
-  local tags
-  tags=(${(s: :)$(_tss_comp_internal_get_tags)})
-  _tss_comp_raw_values_sep ' ' "tag" $tags
+  local -aU tags
+  _tss_comp_internal_get_file_tags
+  _tss_comp_internal_tags
 }
 
 _tss_test() {
@@ -222,15 +252,17 @@ _tss_test() {
 _tss_add() {
   files() {
     # Offer files that don't have all the tags
-    local -aU tags=(${(s: :)${(Q)line[1]}})
+    local -aU tags=(${(s: :)${(Q)line[1]:-}})
     local patterns=() anti_patterns=()
-    local not_all_patterns(${(b)tags[@]})
+    local not_all_patterns=(${(b)tags[@]})
     _tss_comp_internal_files
   }
 
   local curcontext=$curcontext state state_descr line
   local -A opt_args
   _arguments -s -C -S : \
+             "--help[$(tss label generic_completion_help_descr)]" \
+             {-t,--tags}"[$(tss label add_tags_descr)]:tags:->tags" \
              ':tags:->tags' \
              '*:file:files' # let _arguments handle status != 0 on an option
 
@@ -238,19 +270,10 @@ _tss_add() {
 
   case "$state" in
     tags)
-      # One or more tags separated by spaces
-      local location
+      local paths=(${(Q)line[2,-1]})
       local -aU tags
-      if location=$(tss location of .); then
-        tags=(${(s: :)$(tss location index tags "$location")})
-      else
-        # All tags in the current directory
-        local f
-        for f in *(.N); do
-          tags+=(${(s: :)$(tss tags "$f")})
-        done
-      fi
-      _tss_comp_raw_values_sep ' ' "tag" $tags
+      _tss_comp_internal_get_all_tags
+      _tss_comp_internal_tags
       ;;
   esac
 }
@@ -272,9 +295,13 @@ _tss_clean() {
 
 _tss_remove() {
   files() {
-    # Offer files that have any tag matching any of the given patterns
-    local -aU arg_patterns=(${(s: :)${(Q)line[1]}})
-    local -r patterns=("((${(j:|:)arg_patterns}))")
+    local -aU arg_patterns=(${(s: :)${(Q)line[1]:-}})
+    if [[ $arg_patterns ]]; then
+      # Offer files that have any tag matching any of the given patterns
+      local -r patterns=("((${(j:|:)arg_patterns}))")
+    else
+      local -r patterns=()
+    fi
     local -r anti_patterns=() not_all_patterns=()
     _tss_comp_internal_files
   }
@@ -282,6 +309,8 @@ _tss_remove() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
   _arguments -s -C -S : \
+             "--help[$(tss label generic_completion_help_descr)]" \
+             {-t,--tags}"[$(tss label remove_tags_descr)]:patterns:->tags" \
              ':patterns:->tags' \
              '*:file:files' # let _arguments handle status != 0 on an option
 
@@ -290,18 +319,17 @@ _tss_remove() {
   case "$state" in
     tags)
       # One or more tag patterns separated by spaces; we offer existing tags
-      local location
+      local paths=(${(Q)line[2,-1]})
       local -aU tags
-      if location=$(tss location of .); then
-        tags=(${(s: :)$(tss location index tags "$location")})
+      if [[ $paths ]]; then
+        local -r regular_file_pattern='*' accept_non_regular=
+        local -r not_matching_pattern= #"(${(j:|:)patterns}|${(j:|:)anti_patterns})"
+        local -r quiet=x
+        tss internal-tags || true
       else
-        # All tags in the current directory
-        local f
-        for f in *(.N); do
-          tags+=(${(s: :)$(tss tags "$f")})
-        done
+        _tss_comp_internal_get_all_tags
       fi
-      _tss_comp_raw_values_sep ' ' "tag" $tags
+      _tss_comp_internal_tags
       ;;
   esac
 }
@@ -311,14 +339,14 @@ _tss_remove() {
 # Location and index
 ####################
 
-_tss_location_index_tags() {
+_tss_location_index_build() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
   _arguments -s -C -S : \
              ':location:_files -/'
 }
 
-_tss_location_index_build() {
+_tss_location_index_tags() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
   _arguments -s -C -S : \
@@ -336,12 +364,20 @@ _tss_location_index() {
     cmds)
       _values "tss-location-index command" \
               "build[Build index]" \
+              "internal-tags[See tags.]" \
+              "is-fresh" \
               "tags[List all tags that appear in the index]" \
       ;;
     args)
       case ${(Q)line[1]} in
         build)
           _tss_location_index_build
+          ;;
+        internal-*)
+          return 1
+          ;;
+        is-fresh)
+          return 1
           ;;
         tags)
           _tss_location_index_tags

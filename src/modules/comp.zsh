@@ -64,11 +64,10 @@ parse_one_patterns_opt_args() {
 }
 
 tss_comp_internal_parse_patterns_opt_args() {
+  unsetopt warn_nested_var
   tss_comp_require_parameter patterns 'array*'
   tss_comp_require_parameter anti_patterns 'array*'
   tss_comp_require_parameter not_all_patterns 'array*'
-
-  unsetopt warn_nested_var
 
   local args
   patterns=(${(s: :)$(

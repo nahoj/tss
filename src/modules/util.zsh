@@ -152,11 +152,11 @@ internal_parse_tag_opts() {
   require_parameter tags_opts 'array*'
   require_parameter not_tags_opts 'array*'
   require_parameter not_all_tags_opts 'array*'
+
+  unsetopt warn_nested_var
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
   require_parameter not_all_patterns 'array*'
-
-  unsetopt warn_nested_var
 
   local -i i
   for ((i=2; i <= $#tags_opts; i+=2)); do
@@ -201,9 +201,7 @@ require_exists_quietable() {
   local pathh=$1
 
   if [[ ! -e $pathh ]]; then
-    if [[ ! ${quiet:-} ]]; then
-      logkq 2 "No such file or directory: ${(qqq)pathh}"
-    fi
+    logkq 2 "No such file or directory: ${(qqq)pathh}"
     return 1
   fi
 }
@@ -257,10 +255,9 @@ tss_util_internal_file_pattern() {
   require_parameter anti_patterns 'array*'
   require_parameter not_all_patterns 'array*'
 
+  unsetopt warn_nested_var
   require_parameter regular_file_pattern 'scalar*'
   require_parameter accept_non_regular 'scalar*'
-
-  unsetopt warn_nested_var
 
   local IFS=$'\n'
 

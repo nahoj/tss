@@ -51,9 +51,8 @@ tss_internal_files() {
   require_parameter regular_file_pattern 'scalar*'
   require_parameter accept_non_regular 'scalar*'
 
-  require_parameter files 'array*'
-
   unsetopt warn_nested_var
+  require_parameter files 'array*'
 
   files=()
   local pathh file_path error

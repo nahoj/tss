@@ -367,6 +367,20 @@ internal_location_index_files_dir_and_file_name_prefix() {
 # Tags
 #######
 
+tss_location_index_internal_tags() {
+  require_parameter location 'scalar*'
+
+  unsetopt warn_nested_var
+  require_parameter tags 'array*'
+
+  local index="$location/.ts/tsi.json"
+
+  # Get sorted, unique tags
+  tags=(${(f)$(jq -r '[.[].tags | .[].title] | unique | .[]' "$index")})
+
+  internal_location_index_build_if_stale_async "$location"
+}
+
 tss_location_index_tags() {
   if [[ ${1:-} = -- ]]; then
     shift
@@ -382,17 +396,13 @@ tss_location_index_tags() {
     location=$(tss_location_of_dir_unsafe ${.:a}) || fail "Not in a location"
   fi
 
-  local index
-  index="$location/.ts/tsi.json"
-
-  # Get sorted, unique tags
   local -a tags
-  tags=(${(f)$(jq -r '[.[].tags | .[].title] | unique | .[]' "$index")})
-  print -r -- $tags
-
-  tss_location_index_build_if_stale_async "$location"
+  {
+    tss_location_index_internal_tags
+  } always {
+    print -r -- $tags
+  }
 }
-
 
 #######
 # Main
@@ -407,6 +417,9 @@ tss_location_index() {
       ;;
     files)
       tss_location_index_files "$@"
+      ;;
+    internal-tags)
+      tss_location_index_internal_tags "$@"
       ;;
     is-fresh)
       tss_location_index_is_fresh "$@"
