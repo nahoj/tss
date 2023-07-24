@@ -18,9 +18,9 @@ _tss_comp_raw_values() {
 
   unsetopt -m $tss_comp_shell_option_patterns
   if [[ $sep ]]; then
-    _values -s "$sep" "$desc" $values
+    _values ${compadd_opts:-} -s "$sep" "$desc" $values
   else
-    _values "$desc" $values
+    _values ${compadd_opts:-} "$desc" $values
   fi
 }
 
@@ -57,7 +57,7 @@ _tss_comp_internal_files() {
   fi
 
   unsetopt -m $tss_comp_shell_option_patterns
-  _multi_parts -f - / files
+  _multi_parts ${compadd_opts:-} -f - / files
 }
 
 _tss_comp_tags() {
@@ -117,6 +117,8 @@ _tss_comp_internal_file_tags() {
 _tss_files_tags_files() {
   setopt -m tss_comp_shell_option_patterns
 
+  local compadd_opts=($@)
+
   local -r opt_canonical_name=
   local -a patterns anti_patterns not_all_patterns
   local -a not_matching_patterns
@@ -130,6 +132,7 @@ _tss_files_tags_files() {
 _tss_files_tags_tags() {
   setopt -m tss_comp_shell_option_patterns
 
+  local compadd_opts=($@[1,-2])
   local opt_canonical_name=$@[-1]
 
   case $opt_canonical_name in
@@ -200,6 +203,7 @@ _tss_tags() {
 _tss_test_tags() {
   setopt -m tss_comp_shell_option_patterns
 
+  local compadd_opts=($@[1,-2])
   local opt_canonical_name=$@[-1]
 
   local -a patterns anti_patterns not_all_patterns
@@ -248,6 +252,8 @@ _tss_add() {
   files() {
     setopt -m $tss_comp_shell_option_patterns
 
+    local compadd_opts=($@)
+
     local -r opt_canonical_name=
     local -aU arg_tags
     internal_get_arg_tags
@@ -260,6 +266,7 @@ _tss_add() {
   tags() {
     setopt -m $tss_comp_shell_option_patterns
 
+    local compadd_opts=($@[1,-2])
     local opt_canonical_name=${@[-1]}
 
     local -aU arg_tags
@@ -304,6 +311,8 @@ _tss_remove() {
   files() {
     setopt -m $tss_comp_shell_option_patterns
 
+    local compadd_opts=($@)
+
     local -r opt_canonical_name=
     local -aU arg_patterns
     internal_get_arg_patterns
@@ -321,6 +330,7 @@ _tss_remove() {
   tags() {
     setopt -m $tss_comp_shell_option_patterns
 
+    local compadd_opts=($@[1,-2])
     local opt_canonical_name=${@[-1]}
 
     local -aU arg_patterns
