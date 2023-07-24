@@ -27,6 +27,7 @@ local label_remove_descr="Remove tags from one or more files."
 local label_remove_tags_descr="Remove tags matching the given patterns in addition to patterns given in the first positional argument."
 
 local label_tags_descr="List tags present on one or more files."
+local label_tags_l_descr="Print tags on separate lines. (Default: single line, separated by spaces.)"
 local label_tags_not_matching_descr="Only print tags that don't match any of the given patterns."
 local label_tags_on_files_with_tags_descr="Only print tags present on files with tags matching all the given patterns."
 local label_tags_on_files_without_tags_descr="Only print tags present on files without any tag matching any of the given patterns."

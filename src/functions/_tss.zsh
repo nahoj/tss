@@ -192,6 +192,7 @@ _tss_tags() {
   local -A opt_args
   _arguments -s -C -S : \
              "--help[$(tss label generic_completion_help_descr)]" \
+             "-l[$(tss label tags_l_descr)]" \
              "*--not-matching[$(tss label tags_not_matching_descr)]:patterns:_tss_files_tags_tags --not-matching" \
              "*--on-files-with-not-all-tags[$(tss label tags_on_files_with_not_all_tags_descr)]:patterns:_tss_files_tags_tags --not-all-tags" \
              "*--on-files-without-tags[$(tss label tags_on_files_without_tags_descr)]:patterns:_tss_files_tags_tags --not-tags" \

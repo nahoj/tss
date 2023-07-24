@@ -1,6 +1,6 @@
 tss_tags() {
-  local help not_matching_opts tags_opts not_tags_opts not_all_tags_opts quiet_opts
-  zparseopts -D -E -F - -help=help -not-matching+:=not_matching_opts -on-files-with-tags+:=tags_opts \
+  local help l_opts not_matching_opts tags_opts not_tags_opts not_all_tags_opts quiet_opts
+  zparseopts -D -E -F - -help=help l=l_opts -not-matching+:=not_matching_opts -on-files-with-tags+:=tags_opts \
     -on-files-without-tags+:=not_tags_opts -on-files-with-not-all-tags+:=not_all_tags_opts {q,-quiet}=quiet_opts
 
   if [[ -n $help ]]; then
@@ -12,6 +12,7 @@ Usage:          tss tags [<options>] [--] [<path>...]
 Print tags found on files in the given path(s).
 
 Options:
+  -l                                        $label_tags_l_descr
   --not-matching <pattern...>               $label_tags_not_matching_descr
   --on-files-with-tags <pattern...>         $label_tags_on_files_with_tags_descr
   --on-files-without-tags <pattern...>      $label_tags_on_files_without_tags_descr
@@ -24,6 +25,7 @@ EOF
   fi
 
   # Process options
+  local separate_lines=$l_opts
   local quiet=$quiet_opts
 
   local -aU not_matching_patterns
@@ -50,7 +52,13 @@ EOF
   {
     tss_internal_tags
   } always {
-    print -r -- ${(in)tags}
+    if [[ $separate_lines ]]; then
+      if [[ $tags ]]; then
+        print -rl -- ${(in)tags}
+      fi
+    else
+      print -r -- ${(in)tags}
+    fi
   }
 }
 
