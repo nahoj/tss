@@ -64,36 +64,63 @@ parse_one_patterns_opt_args() {
 }
 
 tss_comp_internal_parse_patterns_opt_args() {
+  tss_comp_require_parameter opt_canonical_name 'scalar*'
+
   unsetopt warn_nested_var
-  tss_comp_require_parameter patterns 'array*'
-  tss_comp_require_parameter anti_patterns 'array*'
-  tss_comp_require_parameter not_all_patterns 'array*'
 
   local args
-  patterns=(${(s: :)$(
-    args=${opt_args[-t]:-}:${opt_args[--tags]:-}
-    if [[ $state = yes-tags ]]; then
-      parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
-    else
-      parse_one_patterns_opt_args "$args" ''
-    fi
-  )})
-  anti_patterns=(${(s: :)$(
-    args=${opt_args[-T]:-}:${opt_args[--not-tags]:-}
-    if [[ $state = not-tags ]]; then
-      parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
-    else
-      parse_one_patterns_opt_args "$args" ''
-    fi
-  )})
-  not_all_patterns=(${(s: :)$(
-    args=${opt_args[--not-all-tags]:-}
-    if [[ $state = not-all-tags ]]; then
-      parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
-    else
-      parse_one_patterns_opt_args "$args" ''
-    fi
-  )})
+
+  if [[ -v 'opt_args[-t]' || -v 'opt_args[--tags]' || -v 'opt_args[--on-files-with-tags]' ]]; then
+    tss_comp_require_parameter patterns 'array*'
+
+    args=${opt_args[-t]:-}:${opt_args[--tags]:-}:${opt_args[--on-files-with-tags]:-}
+    patterns=(${(s: :)$(
+      if [[ $opt_canonical_name = --tags ]]; then
+        parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
+      else
+        parse_one_patterns_opt_args "$args" ''
+      fi
+    )})
+  fi
+
+  if [[ -v 'opt_args[-T]' || -v 'opt_args[--not-tags]' || -v 'opt_args[--on-files-without-tags]' ]]; then
+    tss_comp_require_parameter anti_patterns 'array*'
+
+    args=${opt_args[-T]:-}:${opt_args[--not-tags]:-}:${opt_args[--on-files-without-tags]:-}
+    anti_patterns=(${(s: :)$(
+      if [[ $opt_canonical_name = --not-tags ]]; then
+        parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
+      else
+        parse_one_patterns_opt_args "$args" ''
+      fi
+    )})
+  fi
+
+  if [[ -v 'opt_args[--not-all-tags]' || -v 'opt_args[--on-files-with-not-all-tags]' ]]; then
+    tss_comp_require_parameter not_all_patterns 'array*'
+
+    args=${opt_args[--not-all-tags]:-}:${opt_args[--on-files-with-not-all-tags]:-}
+    not_all_patterns=(${(s: :)$(
+      if [[ $opt_canonical_name = --not-all-tags ]]; then
+        parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
+      else
+        parse_one_patterns_opt_args "$args" ''
+      fi
+    )})
+  fi
+
+  if [[ -v 'opt_args[--not-matching]' ]]; then
+    tss_comp_require_parameter not_matching_patterns 'array*'
+
+    args=${opt_args[--not-matching]:-}
+    not_all_patterns=(${(s: :)$(
+      if [[ $opt_canonical_name = --not-matching ]]; then
+        parse_one_patterns_opt_args "$args" "$words[$CURRENT]"
+      else
+        parse_one_patterns_opt_args "$args" ''
+      fi
+    )})
+  fi
 }
 
 tss_comp() {

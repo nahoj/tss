@@ -32,7 +32,6 @@ EOF
     not_matching_patterns+=(${(s: :)not_matching_opts[i]})
   done
   require_valid_patterns $not_matching_patterns
-  local not_matching_pattern="((${(j:|:)not_matching_patterns}))"
 
   local regular_file_pattern accept_non_regular
   internal_file_pattern_parse_tag_opts
@@ -58,7 +57,7 @@ EOF
 tss_internal_tags() {
   require_parameter paths 'array*'
   require_parameter regular_file_pattern 'scalar*'
-  require_parameter not_matching_pattern 'scalar*'
+  require_parameter not_matching_patterns 'array*'
 
   unsetopt warn_nested_var
   require_parameter tags 'array*'
@@ -77,14 +76,7 @@ tss_internal_tags() {
     all_tags+=(${(s: :)match[3]})
   done
 
-  tags=()
-  local tag
-  for tag in $all_tags; do
-    # This is faster than doing it before putting the tags into a unique array
-    if [[ $tag != ${~not_matching_pattern} ]]; then
-      tags+=($tag)
-    fi
-  done
+  tags=(${all_tags:#(${(j:|:)not_matching_patterns})})
 
   [[ ! $error ]]
 }

@@ -60,20 +60,23 @@ _tss_comp_internal_files() {
   _multi_parts -f - / files
 }
 
-_tss_comp_internal_get_all_tags() {
-  tss comp require-parameter paths 'array*'
+_tss_comp_tags() {
+  _tss_comp_raw_values_sep ' ' "tags" $@
+}
 
-  unsetopt warn_nested_var
-  tss comp require-parameter tags 'array*'
+_tss_comp_internal_all_tags() {
+  tss comp require-parameter paths 'array*'
+  tss comp require-parameter not_matching_patterns 'array*'
 
   # Get location tags, if we're in a location
   local -a paths=(${paths:-.})
   local location
+  local -aU tags
   if location=$(tss location of "$paths[1]"); then
-    tss location index internal-tags "$location"
+    tss location index internal-tags "$location" || true
   else
-    local -r regular_file_pattern='*' not_matching_pattern=
-    tss internal-tags
+    local -r regular_file_pattern='*'
+    tss internal-tags || true
   fi
 
   # Get common tags from environment variables (arrays whose name starts with 'tss_tags_')
@@ -83,60 +86,91 @@ _tss_comp_internal_get_all_tags() {
       tags+=(${(P)param})
     fi
   done
+
+  _tss_comp_tags ${tags:#(${(j:|:)not_matching_patterns})}
 }
 
-_tss_comp_internal_get_file_tags() {
+# Complete with tags found on files
+_tss_comp_internal_file_tags() {
   tss comp require-parameter paths 'array*'
-  tss comp require-parameter tags 'array*'
-
-  # Prepare all parameters for 'tss internal-tags'
-  local -a patterns anti_patterns not_all_patterns
-  tss comp internal-parse-patterns-opt-args
+  tss comp require-parameter patterns 'array*'
+  tss comp require-parameter anti_patterns 'array*'
+  tss comp require-parameter not_all_patterns 'array*'
+  tss comp require-parameter not_matching_patterns 'array*'
 
   local regular_file_pattern accept_non_regular
   tss util internal-file-pattern
 
-  local -r not_matching_pattern="(${(j:|:)patterns}|${(j:|:)anti_patterns})"
   local -r quiet=x
-  tss internal-tags
+  local -a tags
+  tss internal-tags || true
+
+  _tss_comp_tags $tags
 }
 
-_tss_comp_internal_tags() {
-  tss comp require-parameter tags 'array*'
-  _tss_comp_raw_values_sep ' ' "tags" $tags
-}
 
 ################
 # Query commands
 ################
 
-_tss_files() {
-  files() {
-    local -a patterns anti_patterns not_all_patterns
-    tss comp internal-parse-patterns-opt-args
-    _tss_comp_internal_files
-  }
+# Complete files for _tss_files and _tss_tags
+_tss_files_tags_files() {
+  setopt -m tss_comp_shell_option_patterns
 
+  local -r opt_canonical_name=
+  local -a patterns anti_patterns not_all_patterns
+  local -a not_matching_patterns
+  tss comp internal-parse-patterns-opt-args
+  unset not_matching_patterns
+
+  _tss_comp_internal_files
+}
+
+# Complete tags for _tss_files and _tss_tags
+_tss_files_tags_tags() {
+  setopt -m tss_comp_shell_option_patterns
+
+  local opt_canonical_name=$@[-1]
+
+  case $opt_canonical_name in
+    --tags|--not-tags|--not-all-tags)
+      local paths=(${(Q)line[@]})
+
+      local -a patterns anti_patterns not_all_patterns
+      local -a not_matching_patterns # Value set by 'tss comp internal-parse-patterns-opt-args' ignored
+      tss comp internal-parse-patterns-opt-args
+      not_matching_patterns=($patterns $anti_patterns)
+
+      if [[ $paths || $patterns || $anti_patterns || $not_all_patterns ]]; then
+        paths=(${paths:-.})
+        _tss_comp_internal_file_tags
+      else
+        _tss_comp_internal_all_tags
+      fi
+      ;;
+
+    --not-matching)
+      # Simplistic completion for the time being
+      local paths=(${(Q)line[@]})
+      local -r not_matching_patterns=()
+      _tss_comp_internal_all_tags
+      ;;
+
+    *)
+      tss comp log "Unknown option name: $opt_canonical_name"
+      return 1
+  esac
+}
+
+_tss_files() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
   _arguments -s -C -S : \
              "--help[$(tss label generic_completion_help_descr)]" \
-             "*--not-all-tags[$(tss label files_not_all_tags_descr)]:patterns:->not-all-tags" \
-             '*'{-T,--not-tags}"[$(tss label files_not_tags_descr)]:patterns:->not-tags" \
-             '*'{-t,--tags}"[$(tss label files_tags_descr)]:patterns:->yes-tags" \
-             '*:file:files' # let _arguments handle status != 0 on an option
-
-  setopt -m tss_comp_shell_option_patterns
-
-  case "$state" in
-    *-tags)
-      # If no path is (yet) known, list all tags in the current directory's location, if it is in one
-      local -r paths=(${(Q)line[@]:-.})
-      local -a tags
-      _tss_comp_internal_get_file_tags
-      _tss_comp_internal_tags
-      ;;
-  esac
+             "*--not-all-tags[$(tss label files_not_all_tags_descr)]:patterns:_tss_files_tags_tags --not-all-tags" \
+             '*'{-T,--not-tags}"[$(tss label files_not_tags_descr)]:patterns:_tss_files_tags_tags --not-tags" \
+             '*'{-t,--tags}"[$(tss label files_tags_descr)]:patterns:_tss_files_tags_tags --tags" \
+             '*:file:_tss_files_tags_files' # let _arguments handle status != 0 on an option
 }
 
 _tss_filter() {
@@ -145,103 +179,52 @@ _tss_filter() {
   _arguments -s -C : \
              "--help[$(tss label generic_completion_help_descr)]" \
              {-n,--name-only}"[$(tss label filter_name_only_descr)]" \
-             "*--not-all-tags[$(tss label filter_not_all_tags_descr)]:patterns:->not-all-tags" \
-             '*'{-T,--not-tags}"[$(tss label filter_not_tags_descr)]:patterns:->not-tags" \
-             '*'{-t,--tags}"[$(tss label filter_tags_descr)]:patterns:->yes-tags" \
-
-  setopt -m tss_comp_shell_option_patterns
-
-  case "$state" in
-    *-tags)
-      _tss_test_tags
-      ;;
-  esac
+             "*--not-all-tags[$(tss label filter_not_all_tags_descr)]:patterns:_tss_test_tags --not-all-tags" \
+             '*'{-T,--not-tags}"[$(tss label filter_not_tags_descr)]:patterns:_tss_test_tags --not-tags" \
+             '*'{-t,--tags}"[$(tss label filter_tags_descr)]:patterns:_tss_test_tags --tags" \
 }
 
 _tss_tags() {
-  convert_opt_args() {
-    # Define fake opt_args for use in other functions
-    opt_args[--tags]=${opt_args[--on-files-with-tags]:-}
-    opt_args[--not-tags]=${opt_args[--on-files-without-tags]:-}
-    opt_args[--not-all-tags]=${opt_args[--on-files-with-not-all-tags]:-}
-  }
-
-  files() {
-    convert_opt_args
-    local -a patterns anti_patterns not_all_patterns
-    tss comp internal-parse-patterns-opt-args
-    _tss_comp_internal_files
-  }
-
   local curcontext=$curcontext state state_descr line
   local -A opt_args
   _arguments -s -C -S : \
              "--help[$(tss label generic_completion_help_descr)]" \
-             "*--not-matching[$(tss label tags_not_matching_descr)]:patterns:->not-matching-tags" \
-             "*--on-files-with-not-all-tags[$(tss label tags_on_files_with_not_all_tags_descr)]:patterns:->not-all-tags" \
-             "*--on-files-without-tags[$(tss label tags_on_files_without_tags_descr)]:patterns:->not-tags" \
-             "*--on-files-with-tags[$(tss label tags_on_files_with_tags_descr)]:patterns:->yes-tags" \
-             '*:file:files' # let _arguments handle status != 0 on an option
-
-  setopt -m tss_comp_shell_option_patterns
-
-  case "$state" in
-    *-tags)
-      local location
-      location=$(tss location of ${(Q)line[1]:-.})
-      # If no path is (yet) known, list all tags in the current directory's location, if it is in one
-      local -r paths=(${(Q)line[@]:-${location:-.}})
-      local -r name_only=
-
-      local tags
-      tags=(${(s: :)$(
-        case "$state" in
-          not-matching-tags)
-            local -ar patterns anti_patterns not_all_patterns
-            local -r not_matching_pattern=
-            tss internal-tags
-            ;;
-          *)
-            convert_opt_args
-            _tss_comp_internal_get_file_tags
-            ;;
-        esac
-        )})
-
-      _tss_comp_internal_tags
-      ;;
-  esac
+             "*--not-matching[$(tss label tags_not_matching_descr)]:patterns:_tss_files_tags_tags --not-matching" \
+             "*--on-files-with-not-all-tags[$(tss label tags_on_files_with_not_all_tags_descr)]:patterns:_tss_files_tags_tags --not-all-tags" \
+             "*--on-files-without-tags[$(tss label tags_on_files_without_tags_descr)]:patterns:_tss_files_tags_tags --not-tags" \
+             "*--on-files-with-tags[$(tss label tags_on_files_with_tags_descr)]:patterns:_tss_files_tags_tags --tags" \
+             '*:file:_tss_files_tags_files' # let _arguments handle status != 0 on an option
 }
 
+# Also used in _tss_filter
 _tss_test_tags() {
-  local location
-  location=$(tss location of .)
-  local -r paths=(${location:-.})
-  local -r name_only=
-  local -aU tags
-  _tss_comp_internal_get_file_tags
-  _tss_comp_internal_tags
+  setopt -m tss_comp_shell_option_patterns
+
+  local opt_canonical_name=$@[-1]
+
+  local -a patterns anti_patterns not_all_patterns
+  tss comp internal-parse-patterns-opt-args
+  local -r not_matching_patterns=($patterns $anti_patterns)
+
+  local -r paths=(${$(tss location of ${(Q)line[1]:-.}):-.})
+
+  if [[ $patterns || $anti_patterns || $not_all_patterns ]]; then
+    _tss_comp_internal_file_tags
+  else
+    _tss_comp_internal_all_tags
+  fi
 }
 
 _tss_test() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
-
   _arguments -s -C -S : \
              "--help[$(tss label generic_completion_help_descr)]" \
              {-n,--name-only}"[$(tss label test_name_only_descr)]" \
-             "*--not-all-tags[$(tss label test_not_all_tags_descr)]:patterns:->not-all-tags" \
-             '*'{-T,--not-tags}"[$(tss label test_not_tags_descr)]:patterns:->not-tags" \
-             '*'{-t,--tags}"[$(tss label test_tags_descr)]:patterns:->yes-tags" \
+             "*--not-all-tags[$(tss label test_not_all_tags_descr)]:patterns:_tss_test_tags --not-all-tags" \
+             '*'{-T,--not-tags}"[$(tss label test_not_tags_descr)]:patterns:_tss_test_tags --not-tags" \
+             '*'{-t,--tags}"[$(tss label test_tags_descr)]:patterns:_tss_test_tags --tags" \
              ':file:_files'
-
-  setopt -m tss_comp_shell_option_patterns
-
-  case "$state" in
-    *-tags)
-      _tss_test_tags
-      ;;
-  esac
 }
 
 
@@ -250,54 +233,82 @@ _tss_test() {
 ###############
 
 _tss_add() {
+  # Get tags from options and first positional argument
+  internal_get_arg_tags() {
+    tss comp require-parameter opt_canonical_name 'scalar*'
+
+    unsetopt warn_nested_var
+    tss comp require-parameter arg_tags 'array*'
+
+    local -a patterns
+    tss comp internal-parse-patterns-opt-args
+    arg_tags=($patterns ${(s: :)${(Q)line[1]:-}})
+  }
+
   files() {
+    setopt -m $tss_comp_shell_option_patterns
+
+    local -r opt_canonical_name=
+    local -aU arg_tags
+    internal_get_arg_tags
+
     # Offer files that don't have all the tags
-    local -aU tags=(${(s: :)${(Q)line[1]:-}})
-    local patterns=() anti_patterns=()
-    local not_all_patterns=(${(b)tags[@]})
+    local -r patterns=() anti_patterns=() not_all_patterns=(${(b)arg_tags[@]})
     _tss_comp_internal_files
+  }
+
+  tags() {
+    setopt -m $tss_comp_shell_option_patterns
+
+    local opt_canonical_name=${@[-1]}
+
+    local -aU arg_tags
+    internal_get_arg_tags
+
+    # Offer tags not already given
+    local -r paths=(${(Q)line[2,-1]})
+    local -r not_matching_patterns=(${(b)arg_tags[@]})
+    _tss_comp_internal_all_tags
   }
 
   local curcontext=$curcontext state state_descr line
   local -A opt_args
   _arguments -s -C -S : \
              "--help[$(tss label generic_completion_help_descr)]" \
-             {-t,--tags}"[$(tss label add_tags_descr)]:tags:->tags" \
-             ':tags:->tags' \
+             {-t,--tags}"[$(tss label add_tags_descr)]:tags:tags --tags" \
+             ':tags:tags ""' \
              '*:file:files' # let _arguments handle status != 0 on an option
-
-  setopt -m $tss_comp_shell_option_patterns
-
-  case "$state" in
-    tags)
-      local paths=(${(Q)line[2,-1]})
-      local -aU tags
-      _tss_comp_internal_get_all_tags
-      _tss_comp_internal_tags
-      ;;
-  esac
 }
 
-# tss clean takes one or more files as positional arguments
 _tss_clean() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
   _arguments -s -C -S : \
-             '*::file:->files'
-
-  case "$state" in
-    files)
-      # Regular files with a tag group
-      _path_files -g '**/*[[]*[]]*(.)'
-      ;;
-  esac
+             "*:file:_path_files -g '**/*[[]*[]]*(.)'" # Regular files with a tag group
 }
 
 _tss_remove() {
+  # Get patterns from options and first positional argument
+  internal_get_arg_patterns() {
+    tss comp require-parameter opt_canonical_name 'scalar*'
+
+    unsetopt warn_nested_var
+    tss comp require-parameter arg_patterns 'array*'
+
+    local -a patterns
+    tss comp internal-parse-patterns-opt-args
+    arg_patterns=($patterns ${(s: :)${(Q)line[1]:-}})
+  }
+
+  # Offer files that have any tag matching any of the given patterns, or all files if no pattern is given
   files() {
-    local -aU arg_patterns=(${(s: :)${(Q)line[1]:-}})
+    setopt -m $tss_comp_shell_option_patterns
+
+    local -r opt_canonical_name=
+    local -aU arg_patterns
+    internal_get_arg_patterns
+
     if [[ $arg_patterns ]]; then
-      # Offer files that have any tag matching any of the given patterns
       local -r patterns=("((${(j:|:)arg_patterns}))")
     else
       local -r patterns=()
@@ -306,32 +317,33 @@ _tss_remove() {
     _tss_comp_internal_files
   }
 
+  # Offer tags not matched by the already-given patterns
+  tags() {
+    setopt -m $tss_comp_shell_option_patterns
+
+    local opt_canonical_name=${@[-1]}
+
+    local -aU arg_patterns
+    internal_get_arg_patterns
+    local -r not_matching_patterns=($arg_patterns)
+
+    local paths=(${(Q)line[2,-1]})
+    if [[ $paths ]]; then
+      local -r patterns=() anti_patterns=() not_all_patterns=()
+      _tss_comp_internal_file_tags
+
+    else
+      _tss_comp_internal_all_tags
+    fi
+  }
+
   local curcontext=$curcontext state state_descr line
   local -A opt_args
   _arguments -s -C -S : \
              "--help[$(tss label generic_completion_help_descr)]" \
-             {-t,--tags}"[$(tss label remove_tags_descr)]:patterns:->tags" \
-             ':patterns:->tags' \
+             {-t,--tags}"[$(tss label remove_tags_descr)]:patterns:tags --tags" \
+             ':patterns:tags ""' \
              '*:file:files' # let _arguments handle status != 0 on an option
-
-  setopt -m $tss_comp_shell_option_patterns
-
-  case "$state" in
-    tags)
-      # One or more tag patterns separated by spaces; we offer existing tags
-      local paths=(${(Q)line[2,-1]})
-      local -aU tags
-      if [[ $paths ]]; then
-        local -r regular_file_pattern='*' accept_non_regular=
-        local -r not_matching_pattern= #"(${(j:|:)patterns}|${(j:|:)anti_patterns})"
-        local -r quiet=x
-        tss internal-tags || true
-      else
-        _tss_comp_internal_get_all_tags
-      fi
-      _tss_comp_internal_tags
-      ;;
-  esac
 }
 
 
