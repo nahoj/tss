@@ -230,6 +230,24 @@ tss_location_index_tags() {
 #######
 
 tss_location_index() {
+  local help
+  zparseopts -D -F - -help=help
+
+  if [[ $# -eq 0 || -n $help ]]; then
+    cat <<EOF
+
+Usage: tss location index <command> [--help] [<parameters>]
+
+Commands:
+  build
+  internal-tags
+  is-fresh
+  tags
+
+EOF
+    return 0
+  fi
+
   local command=$1
   shift
   case $command in

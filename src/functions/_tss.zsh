@@ -454,10 +454,10 @@ _tss_location() {
   case "$state" in
     cmds)
       _values "tss-location command" \
-              "index[Work with a location index]" \
-              "init[Initialize a location]" \
-              "of[Print the TagSpaces location of the given path, or an empty string]" \
-              "remove[Remove a directory's status as a location]" \
+              "index[$(tss label location_index_descr)]" \
+              "init[$(tss label location_init_descr)]" \
+              "of[$(tss label location_of_descr)]" \
+              "remove[$(tss label location_remove_descr)]" \
       ;;
     args)
       case ${(Q)line[1]} in

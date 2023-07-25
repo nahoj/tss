@@ -20,7 +20,13 @@ local label_generic_help_help_descr="Show this help message."
 local label_generic_quiet_descr="Don't print non-fatal errors."
 
 local label_label_descr="App labels (parameter descriptions etc.)."
+
 local label_location_descr="Work with Locations."
+local label_location_index_descr="Work with indexes."
+local label_location_init_descr="Make a directory a location."
+local label_location_of_descr="Print the location of a file or directory."
+local label_location_remove_descr="Make a directory no longer a location."
+
 local label_query_descr="Alias for 'files'."
 
 local label_remove_descr="Remove tags from one or more files."
