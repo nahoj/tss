@@ -22,19 +22,30 @@ $ find | tss filter -t '(alps|pyrenees)'
 ./IMG-2653[vacation alps].jpg
 ```
 
+Completion is designed as an integral part of the program. Queries are basically run as you type:
+```shell
+$ tss query -t tag1 <tab>           # Files with tag1
+$ tss query -t tag1 path/ -t <tab>  # Tags found on files that have tag1 in path/
+$ tss add tag1 <tab>                # Files that don't have tag1
+```
+
+You can declare one or more *locations* (paths where you keep tagged files) to get improved tag suggestions for files under them. I consider it a secondary feature. Requires `jq`. `tss` will detect TagSpaces locations.
+```shell
+$ tss location init ~/photos  # That's it
+```
+
 ## Pros
 
 A very simple, powerful but zero-commitment concept:
 
 1. By now you understand how you could tag and search your files with tools you already have: your file manager and desktop search, basic commands, `vidir`, etc. Feel free to try it by yourself and come back in a month if you like it.
 2. Install `tss` (or TagSpaces for a graphical tool) and you get more efficient and powerful actions and queries.
-3. **(still under development)** Define a *location* (root directory where your tagged files are) and queries/completion get faster.
-4. Uninstall at any time without any loss of data.
+3. Uninstall at any time without any loss of data.
 
 ## Requirements
 
 - `zsh >=5.8`. `tss` can be run from any shell but completions are provided for zsh only.
-- `jq`
+- (recommended) `jq`
 - (to install) `make`
 - (to test) `shellspec`
 

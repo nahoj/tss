@@ -12,6 +12,9 @@ tss_location_init() {
   if [[ -f "$location/.ts/tsi.json" ]]; then
     fail "Already a location: ${(qqq)location}"
   fi
+  if ! type jq >/dev/null; then
+    fail "Using locations requires [jq](https://jqlang.github.io/jq/)."
+  fi
   mkdir -p "$location/.ts"
   print -r '[]' >"$location/.ts/tsi.json"
   tss_location_index_build "$location"
