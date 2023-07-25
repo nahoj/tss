@@ -20,6 +20,31 @@ tss_comp_require_parameter() {
   fi
 }
 
+# Write in $paths all file paths starting with $prefix and matching any of the given relative path patterns
+tss_comp_rec_glob_prefix() {
+  local prefix=$1
+  local rel_path_patterns=($@[2,-1])
+
+  unsetopt warn_nested_var
+  tss_comp_require_parameter paths 'array*'
+
+  local prefix_dir_part=${prefix%%[^/]#}  # $prefix up to last '/' included, if any
+
+  paths=()
+  local rel_path_pattern sibling_paths
+  for rel_path_pattern in $rel_path_patterns; do
+    if [[ $prefix != (*/|) ]]; then
+      # Siblings paths of $prefix that match $rel_path_pattern, possibly including $prefix itself
+      sibling_paths=($prefix_dir_part${~rel_path_pattern})
+      # Those of them that start with $prefix
+      paths+=(${(M)sibling_paths:#$prefix*})
+    fi
+
+    # Paths strictly under $prefix_dir_part that match $rel_path_pattern
+    paths+=($prefix_dir_part**/${~rel_path_pattern})
+  done
+}
+
 # Escape special characters in a raw string to give to _values
 tss_comp_escape_value() {
   local c
@@ -138,6 +163,9 @@ tss_comp() {
       ;;
     logl)
       tss_comp_logl "$@"
+      ;;
+    rec-glob-prefix)
+      tss_comp_rec_glob_prefix "$@"
       ;;
     require-parameter)
       tss_comp_require_parameter "$@"

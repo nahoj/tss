@@ -46,6 +46,13 @@ tss_location_of() {
   tss_location_of_dir_unsafe "$abs_dir_path"
 }
 
+tss_location_remove() {
+  local location=${1:-.}
+  require_is_location "$location"
+  rm -rf "$location/.ts"
+  logg "${(q-)location} is no longer a location."
+}
+
 tss_location() {
   local command=$1
   shift
@@ -58,6 +65,9 @@ tss_location() {
       ;;
     of)
       tss_location_of "$@"
+      ;;
+    remove)
+      tss_location_remove "$@"
       ;;
     *)
       log "Unknown command: $command"

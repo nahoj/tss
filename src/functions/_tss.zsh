@@ -39,25 +39,19 @@ _tss_comp_internal_files() {
   tss comp require-parameter anti_patterns 'array*'
   tss comp require-parameter not_all_patterns 'array*'
 
-  local dir_pattern
-  if [[ ${(Q)words[$CURRENT]} != */* ]]; then
-    dir_pattern="**/"
-  elif [[ ${(Q)words[$CURRENT]} = */ ]]; then
-    dir_pattern="${(Q)words[$CURRENT]}**/"
-  else
-    dir_pattern="${${(Q)words[$CURRENT]}:h}/**/"
-  fi
-
   local regular_file_pattern accept_non_regular
   tss util internal-file-pattern
 
-  local files=(${~dir_pattern}${~regular_file_pattern}(.))
+  local file_patterns=("$regular_file_pattern(.)")
   if [[ $accept_non_regular ]]; then
-    files+=(${~dir_pattern}*(^.))
+    file_patterns+=("*(^.)")
   fi
 
+  local -a paths
+  tss comp rec-glob-prefix "${(Q)words[$CURRENT]}" $file_patterns
+
   unsetopt -m $tss_comp_shell_option_patterns
-  _multi_parts ${compadd_opts:-} -f - / files
+  _multi_parts ${compadd_opts:-} -f - / paths
 }
 
 _tss_comp_tags() {
@@ -366,18 +360,33 @@ _tss_remove() {
 # Location and index
 ####################
 
+# Complete location paths
+_tss_comp_locations() {
+  setopt -m $tss_comp_shell_option_patterns
+  local compadd_opts=($@)
+
+  # Get paths of indexes
+  local -a paths
+  tss comp rec-glob-prefix "${(Q)words[$CURRENT]}" '.ts/tsi.json'
+
+  local locations=(${${paths%/.ts/tsi.json}:/.ts\/tsi.json/.})
+
+  unsetopt -m $tss_comp_shell_option_patterns
+  _multi_parts ${compadd_opts:-} -f - / locations
+}
+
 _tss_location_index_build() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
   _arguments -s -C -S : \
-             ':location:_files -/'
+             ':location:_tss_comp_locations'
 }
 
 _tss_location_index_tags() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
   _arguments -s -C -S : \
-             ':location:_files -/'
+             ':location:_tss_comp_locations'
 }
 
 _tss_location_index() {
@@ -428,6 +437,13 @@ _tss_location_of() {
              ':file:_files'
 }
 
+_tss_location_remove() {
+  local curcontext=$curcontext state state_descr line
+  local -A opt_args
+  _arguments -s -C -S : \
+             ':location:_tss_comp_locations'
+}
+
 _tss_location() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
@@ -441,6 +457,7 @@ _tss_location() {
               "index[Work with a location index]" \
               "init[Initialize a location]" \
               "of[Print the TagSpaces location of the given path, or an empty string]" \
+              "remove[Remove a directory's status as a location]" \
       ;;
     args)
       case ${(Q)line[1]} in
@@ -452,6 +469,9 @@ _tss_location() {
           ;;
         of)
           _tss_location_of
+          ;;
+        remove)
+          _tss_location_remove
           ;;
       esac
       ;;
@@ -476,6 +496,7 @@ _tss_comp() {
               "internal-parse-patterns-opt-args" \
               "log" \
               "logl" \
+              "rec-glob-prefix" \
               "require-parameter" \
       ;;
     args)
