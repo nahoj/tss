@@ -87,7 +87,7 @@ _tss_comp_internal_all_tags() {
     fi
   done
 
-  _tss_comp_tags ${tags:#(${(j:|:)not_matching_patterns})}
+  _tss_comp_tags ${tags:#${~:-(${(j:|:)not_matching_patterns})}}
 }
 
 # Complete with tags found on files
@@ -268,14 +268,18 @@ _tss_add() {
     setopt -m $tss_comp_shell_option_patterns
 
     local compadd_opts=($@[1,-2])
-    local opt_canonical_name=${@[-1]}
+    local opt_canonical_name=$@[-1]
 
     local -aU arg_tags
     internal_get_arg_tags
 
-    # Offer tags not already given
     local -r paths=(${(Q)line[2,-1]})
-    local -r not_matching_patterns=(${(b)arg_tags[@]})
+    # Exclude tags already given
+    local -aU not_matching_patterns=(${(b)arg_tags[@]})
+    # Exclude tags that are on all of the files
+    if [[ $paths ]]; then
+      not_matching_patterns+=($(tss util tag-on-all-files-pattern $paths))
+    fi
     _tss_comp_internal_all_tags
   }
 
@@ -501,9 +505,13 @@ _tss_util() {
       _values "tss-util command" \
               "internal-file-pattern" \
               "is-valid-pattern" \
+              "tag-on-all-files-pattern" \
       ;;
     args)
       case ${(Q)line[1]} in
+        tag-on-all-files-pattern)
+          _files
+          ;;
         *)
           return 1
           ;;

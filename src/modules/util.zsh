@@ -250,6 +250,31 @@ require_tag_valid() {
 # Pattern utils
 ###############
 
+p_tag_group_with_tag() {
+  local pattern
+  for pattern in $@; do
+    # If the output is ever given to _files -g, ' ' should be replaced with [[:space:]] because of this bug:
+    # https://www.zsh.org/mla/workers/2023/msg00667.html
+    print -r -- "(* |)${pattern}( *|)"
+  done
+}
+
+p_and() {
+  [[ $@ ]] || failkq 1 "At least one pattern expected"
+  # Double ( ) to never be interpreted as a qualifier
+  print -r -- "((${(j:)~^(:)@}))"
+}
+
+p_or() {
+  [[ $@ ]] || failkq 1 "At least one pattern expected"
+  # Double ( ) to never be interpreted as a qualifier
+  print -r -- "((${(j:|:)@}))"
+}
+
+p_file_with_tag_group() {
+  print -r -- "*[[]${1}[]]*"
+}
+
 tss_util_internal_file_pattern() {
   require_parameter patterns 'array*'
   require_parameter anti_patterns 'array*'
@@ -261,41 +286,18 @@ tss_util_internal_file_pattern() {
 
   local IFS=$'\n'
 
-  group_with_tag() {
-    local pattern
-    for pattern in $@; do
-      # Don't use a literal space because of this bug in _files:
-      # https://www.zsh.org/mla/workers/2023/msg00667.html
-      print -r -- "(*[[:space:]]|)${pattern}([[:space:]]*|)"
-    done
-  }
-
-  and() {
-    [[ $@ ]]
-    print -r -- "(${(j:)~^(:)@})"
-  }
-
-  or() {
-    [[ $@ ]]
-    print -r -- "(${(j:|:)@})"
-  }
-
-  file_with_group() {
-    print -r -- "*[[]${1}[]]*"
-  }
-
   if [[ $patterns ]]; then
-    regular_file_pattern=$(file_with_group "($(and $(group_with_tag $patterns)))")
+    regular_file_pattern=$(p_file_with_tag_group "$(p_and $(p_tag_group_with_tag $patterns))")
     accept_non_regular=
   else
     regular_file_pattern="*"
     accept_non_regular=x
   fi
   if [[ $anti_patterns ]]; then
-    regular_file_pattern+="~$(file_with_group $(or $(group_with_tag $anti_patterns)))"
+    regular_file_pattern+="~$(p_file_with_tag_group $(p_or $(p_tag_group_with_tag $anti_patterns)))"
   fi
   if [[ $not_all_patterns ]]; then
-    regular_file_pattern+="~$(file_with_group "($(and $(group_with_tag $not_all_patterns)))")"
+    regular_file_pattern+="~$(p_file_with_tag_group "$(p_and $(p_tag_group_with_tag $not_all_patterns))")"
   fi
 }
 
@@ -303,6 +305,17 @@ internal_file_pattern_parse_tag_opts() {
   local -aU patterns anti_patterns not_all_patterns
   internal_parse_tag_opts
   tss_util_internal_file_pattern
+}
+
+# Print a pattern that matches a tag that is on all the given files
+tss_utils_tag_on_all_files_pattern() {
+  local file_paths=($@)
+
+  local -aU tags
+  internal_tags_on_all_files_name_only
+  if [[ $tags ]]; then
+    p_or $tags
+  fi
 }
 
 
@@ -319,6 +332,9 @@ tss_util() {
       ;;
     is-valid-pattern)
       is_valid_pattern "$@"
+      ;;
+    tag-on-all-files-pattern)
+      tss_utils_tag_on_all_files_pattern "$@"
       ;;
     *)
       fail "Unknown command: $command"

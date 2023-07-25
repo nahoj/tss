@@ -100,3 +100,24 @@ internal_file_tags_name_only() {
   [[ ${file_path:t} =~ $file_name_maybe_tag_group_regex ]]
   file_tags=(${(s: :)match[3]})
 }
+
+internal_tags_on_all_files_name_only() {
+  require_parameter file_paths 'array*'
+  [[ $file_paths ]] || failkq 1 "At least one file path expected"
+
+  unsetopt warn_nested_var
+  require_parameter tags 'array*'
+
+  local file_path=$file_paths[1]
+  local -a file_tags
+  internal_file_tags_name_only
+  tags=($file_tags)
+
+  for file_path in $file_paths[2,-1]; do
+    if [[ ! $tags ]]; then
+      break
+    fi
+    internal_file_tags_name_only
+    tags=(${tags:*file_tags})
+  done
+}
