@@ -46,20 +46,6 @@ tss_location_of() {
   tss_location_of_dir_unsafe "$abs_dir_path"
 }
 
-tss_location_tags() {
-  local pathh=${1:-.}
-
-  local location
-  location=$(tss_location_of "$pathh") || fail "Not in a location: ${(qqq)pathh}"
-
-  if tss_location_index_is_fresh "$location"; then
-    tss_location_index_tags "$location"
-  else
-    tss_tags "$location"
-    tss_location_index_build_if_stale_async "$location"
-  fi
-}
-
 tss_location() {
   local command=$1
   shift
@@ -72,9 +58,6 @@ tss_location() {
       ;;
     of)
       tss_location_of "$@"
-      ;;
-    tags)
-      tss_location_tags "$@"
       ;;
     *)
       log "Unknown command: $command"

@@ -1,6 +1,6 @@
 # TTL: Not too short because we're slow, and not exactly 10 minutes to
 # have a lower probability of rebuilding at the same time as TagSpaces.
-local -i index_ttl_seconds=900
+local -i index_ttl_seconds=1200
 
 
 ########
@@ -184,185 +184,6 @@ tss_location_index_is_fresh() {
   [[ $(zstat +mtime "$index") -gt $(($(date +%s) - $index_ttl_seconds)) ]]
 }
 
-########
-# Files
-########
-
-tss_location_index_files() {
-  local -a path_opt tags_opts not_tags_opts not_all_tags_opts
-  zparseopts -D -E -F - {-path,-path-starts-with}:=path_opt {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts \
-    -not-all-tags+:=not_all_tags_opts
-
-  # Process options
-  local -aU patterns anti_patterns not_all_patterns
-  internal_parse_tag_opts
-
-  # Process positional arguments
-  if [[ ${1:-} = '--' ]]; then
-    shift
-  fi
-  local location
-  location=$1
-
-  case ${path_opt[1]:-} in
-    '')
-      local -r pathh=.
-      internal_location_index_files_path
-      ;;
-    --path)
-      local -r pathh=$path_opt[2]
-      internal_location_index_files_path
-      ;;
-    --path-starts-with)
-      local -r path_starts_with=$path_opt[2]
-      internal_location_index_files_path_starts_with
-      ;;
-  esac
-}
-
-internal_location_index_files_path() {
-  require_parameter location 'scalar*'
-  require_parameter pathh 'scalar*'
-  require_exists "$pathh"
-
-  require_parameter patterns 'array*'
-  require_parameter anti_patterns 'array*'
-  require_parameter not_all_patterns 'array*'
-
-  if [[ -d $pathh ]]; then
-    local -r dir_path=$pathh
-    local -r file_name_prefix=
-    internal_location_index_files_dir_and_file_name_prefix
-
-  else
-    # For single files, don't use the index at all
-    local file_path=$pathh
-    local -r name_only=
-    if [[ ${file_path:a} = ${location:a}/* ]] && internal_test; then
-      print -r -- "$file_path"
-    fi
-  fi
-}
-
-internal_location_index_files_path_starts_with() {
-  require_parameter location 'scalar*'
-  require_parameter path_starts_with 'scalar*'
-
-  require_parameter patterns 'array*'
-  require_parameter anti_patterns 'array*'
-  require_parameter not_all_patterns 'array*'
-
-  local file_name_prefix=${path_starts_with##*/}             # $path_starts_with after last / excluded
-  local dir_path=${${path_starts_with%$file_name_prefix}:-.} # $path_starts_with up to last / included, or .
-  internal_location_index_files_dir_and_file_name_prefix
-}
-
-# Matches a string that contains an unescaped special glob character.
-# This is an extended pattern.
-local pattern_pattern='(*[^\\](\\\\)#|)[*(|<[?^#]*'
-
-print_condition_of_yes_pattern() {
-  local pattern=$1
-  # If $pattern is actually a pattern, not a simple string
-  if [[ $pattern = ${~pattern_pattern} ]]; then
-    return 1
-  else
-    print -n '.tags | any(.title == '
-    print_json_string "$pattern"
-    print -n ')'
-  fi
-}
-
-print_condition_of_anti_pattern() {
-  print_condition_of_yes_pattern "$1"
-  # If the above succeeded
-  print -n ' | not'
-}
-
-internal_location_index_files_dir_and_file_name_prefix() {
-  require_parameter location 'scalar*'
-  require_is_location "$location"
-
-  require_parameter dir_path 'scalar*'
-  require_parameter file_name_prefix 'scalar*'
-
-  require_parameter patterns 'array*'
-  require_parameter anti_patterns 'array*'
-  require_parameter not_all_patterns 'array*'
-
-  local abs_location=${location:a}
-  local abs_dir_path=${dir_path:a}
-  if [[ $abs_dir_path = $PWD ]]; then
-    local output_prefix=
-  else
-    local output_prefix="${dir_path%/}/"
-  fi
-
-  if [[ $abs_dir_path = $abs_location ]]; then
-    local index_prefix=$file_name_prefix
-    local -i offset=0
-
-  # If the dir is strictly under the location
-  elif [[ $abs_dir_path = $abs_location/* ]]; then
-    local index_dir_path=${abs_dir_path#$abs_location/}
-    local index_prefix="$index_dir_path/$file_name_prefix"
-    local -i offset=$(($#index_dir_path + 1))
-
-  # If the location is strictly under the dir
-  elif [[ $abs_location = $abs_dir_path/* ]]; then
-    # All files in the index are in the path
-    local index_prefix=
-    local -i offset=0
-    output_prefix+="${abs_location#$abs_dir_path/}/"
-
-  else
-    # No file in the index is in the path
-    return 0
-  fi
-
-  # Build jq condition to select file objects
-  local condition='.isFile'
-
-  # Path condition
-  if [[ -n $index_prefix ]]; then
-    condition+=' and (.path | startswith('$(print_json_string "$index_prefix")'))'
-  fi
-
-  # Tag conditions
-  local filter_patterns=() filter_anti_patterns=() pattern pattern_condition
-  for pattern in $patterns; do
-    if pattern_condition=$(print_condition_of_yes_pattern "$pattern"); then
-      condition+=" and ($pattern_condition)"
-    else
-      filter_patterns+=("$pattern")
-    fi
-  done
-  for pattern in $anti_patterns; do
-    if pattern_condition=$(print_condition_of_anti_pattern "$pattern"); then
-      condition+=" and ($pattern_condition)"
-    else
-      filter_anti_patterns+=("$pattern")
-    fi
-  done
-
-  local index="$location/.ts/tsi.json"
-  jq -r 'map(select('$condition') | .path) | .[]' "$index" | {
-
-    local file_path
-    while read -r file_path; do
-      print -rn -- "$output_prefix"
-      print -r -- "${file_path:$offset}"
-    done
-
-  } | () {
-    local -r patterns=($filter_patterns) anti_patterns=($filter_anti_patterns)
-    local -r name_only=x
-    internal_filter
-
-  } || return $?
-}
-
-
 #######
 # Tags
 #######
@@ -415,9 +236,6 @@ tss_location_index() {
     build)
       tss_location_index_build "$@"
       ;;
-    files)
-      tss_location_index_files "$@"
-      ;;
     internal-tags)
       tss_location_index_internal_tags "$@"
       ;;
@@ -428,7 +246,7 @@ tss_location_index() {
       tss_location_index_tags "$@"
       ;;
     *)
-      fail "Unknown command $command"
+      fail "Unknown command: $command"
       ;;
   esac
 }

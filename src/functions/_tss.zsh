@@ -424,13 +424,6 @@ _tss_location_of() {
              ':file:_files'
 }
 
-_tss_location_tags() {
-  local curcontext=$curcontext state state_descr line
-  local -A opt_args
-  _arguments -s -C -S : \
-             ':path:_files -/' \
-}
-
 _tss_location() {
   local curcontext=$curcontext state state_descr line
   local -A opt_args
@@ -444,7 +437,6 @@ _tss_location() {
               "index[Work with a location index]" \
               "init[Initialize a location]" \
               "of[Print the TagSpaces location of the given path, or an empty string]" \
-              "tags[Print all tags in the location of the given path]" \
       ;;
     args)
       case ${(Q)line[1]} in
@@ -456,9 +448,6 @@ _tss_location() {
           ;;
         of)
           _tss_location_of
-          ;;
-        tags)
-          _tss_location_tags
           ;;
       esac
       ;;
