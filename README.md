@@ -29,6 +29,14 @@ $ tss query -t tag1 path/ -t <tab>  # Tags found on files that have tag1 in path
 $ tss add tag1 <tab>                # Files that don't have tag1
 ```
 
+Common tag suggestions added to `.zshrc`, which you can edit to your liking:
+```shell
+tss_tags_ratings=(1star 2star 3star 4star 5star)
+tss_tags_media=(toread reading read towatch watched)
+tss_tags_workflow=(todo draft done published)
+tss_tags_life=(family friends personal school vacation work other)
+```
+
 You can declare one or more *locations* (paths where you keep tagged files) to get improved tag suggestions for files under them. I consider it a secondary feature. Requires `jq`. `tss` will detect TagSpaces locations.
 ```shell
 $ tss location init ~/photos  # That's it
@@ -36,7 +44,7 @@ $ tss location init ~/photos  # That's it
 
 ## Pros
 
-A very simple, powerful but zero-commitment concept:
+A very simple, effective but zero-commitment concept:
 
 1. By now you understand how you could tag and search your files with tools you already have: your file manager and desktop search, basic commands, `vidir`, etc. Feel free to try it by yourself and come back in a month if you like it.
 2. Install `tss` (or TagSpaces for a graphical tool) and you get more efficient and powerful actions and queries.
