@@ -97,23 +97,6 @@ set_file_tags() {
   fi
 }
 
-tag_in_patterns() {
-  local tag=$1
-  shift
-  local patterns=($@)
-  if [[ $#patterns -eq 0 ]]; then
-    fail "No tag patterns given"
-  fi
-
-  local pattern
-  for pattern in "$patterns[@]"; do
-    if [[ $tag = ${~pattern} ]]; then
-      return 0
-    fi
-  done
-  return 1
-}
-
 internal_add_remove_one_file() {
   require_parameter add_tags 'array*'
   require_parameter remove_patterns 'array*'
@@ -124,23 +107,7 @@ internal_add_remove_one_file() {
   local -a file_tags
   internal_file_tags_name_only
 
-  local new_tags tag
-  if [[ $#remove_patterns -gt 0 ]]; then
-    new_tags=()
-    for tag in $file_tags; do
-      if ! tag_in_patterns "$tag" $remove_patterns; then
-        new_tags+=("$tag")
-      fi
-    done
-  else
-    new_tags=($file_tags)
-  fi
-
-  for tag in $add_tags; do
-    if ! ((new_tags[(Ie)$tag])); then
-      new_tags+=("$tag")
-    fi
-  done
+  local -aU new_tags=(${file_tags:#${~:-(${(j:|:)remove_patterns})}} $add_tags)
 
   if ! arrayeq new_tags file_tags; then
     set_file_tags "$file_path" $new_tags

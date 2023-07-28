@@ -56,7 +56,7 @@ tss_internal_files() {
 
   files=()
   local pathh file_path error
-  local name_only= # For internal_test
+  local -r name_only= # For internal_test
   for pathh in $paths; do
     require_exists_quietable "$pathh" || error=x
 

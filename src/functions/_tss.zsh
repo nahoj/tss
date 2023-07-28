@@ -7,6 +7,8 @@
 ###############
 
 _tss_comp_raw_values() {
+  # optional: sep 'scalar*'
+
   local desc=$1
   shift
   (( $# )) || return 1
