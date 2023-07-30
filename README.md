@@ -22,7 +22,7 @@ $ find | tss filter -t '(alps|pyrenees)'
 ./IMG-2653[vacation alps].jpg
 ```
 
-Completion is designed as an integral part of the program. Queries are basically run as you tag-complete:
+Completion is designed as an integral part of the program. Queries are basically run as you tab-complete:
 ```shell
 $ tss query -t tag1 <tab>           # Files with tag1
 $ tss query -t tag1 path/ -t <tab>  # Tags found on files that have tag1 in path/
