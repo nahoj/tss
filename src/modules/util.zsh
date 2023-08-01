@@ -315,6 +315,33 @@ internal_file_pattern_parse_tag_opts() {
   tss_util_internal_file_pattern
 }
 
+tss_util_file_pattern() {
+  local -a help tags_opts not_tags_opts not_all_tags_opts
+  zparseopts -D -E -F - -help=help {t,-tags}+:=tags_opts {T,-not-tags}+:=not_tags_opts -not-all-tags+:=not_all_tags_opts
+
+  if [[ -n $help ]]; then
+    cat <<EOF
+
+Usage: tss util file-pattern [<options>]
+
+Options:
+  -t, --tags <pattern...>       $label_filter_tags_descr
+  -T, --not-tags <pattern...>   $label_filter_not_tags_descr
+  --not-all-tags <pattern...>   $label_filter_not_all_tags_descr
+  --help                        $label_generic_help_help_descr
+
+EOF
+    return 0
+  fi
+
+  local regular_file_pattern accept_non_regular
+  internal_file_pattern_parse_tag_opts
+  logg "Regular file pattern:"
+  print -r -- "$regular_file_pattern"
+  logg "Accept non-regular files:"
+  print -r -- "$accept_non_regular"
+}
+
 # Print a pattern that matches a tag that is on all the given files
 tss_utils_tag_on_all_files_pattern() {
   local file_paths=($@)
@@ -335,6 +362,9 @@ tss_util() {
   local command=$1
   shift
   case $command in
+    file-pattern)
+      tss_util_file_pattern "$@"
+      ;;
     internal-file-pattern)
       tss_util_internal_file_pattern "$@"
       ;;

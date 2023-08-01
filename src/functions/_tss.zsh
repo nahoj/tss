@@ -526,6 +526,7 @@ _tss_util() {
   case "$state" in
     cmds)
       _values "tss-util command" \
+              "file-pattern" \
               "internal-file-pattern" \
               "is-valid-pattern" \
               "tag-on-all-files-pattern" \
