@@ -253,31 +253,41 @@ require_tag_valid() {
 # Pattern utils
 ###############
 
-p_tag_group_with_tag() {
+p_map_tag_group_with_tag() {
   local pattern
   for pattern in $@; do
     # If the output is ever given to _files -g, ' ' should be replaced with [[:space:]] because of this bug:
     # https://www.zsh.org/mla/workers/2023/msg00667.html
-    # Also, use (...)# instead of (|...) or (...|), waiting for more info on:
-    # https://www.zsh.org/mla/workers/2023/msg00719.html
-    print -r -- "(* )#${pattern}( *)#"
+    print -r "(* |)($pattern)( *|)"
   done
 }
 
 p_and() {
   [[ $@ ]] || failkq 1 "At least one pattern expected"
-  # Double ( ) to never be interpreted as a qualifier
-  print -r -- "((${(j:)~^(:)@}))"
+  if (( $# == 1 )); then
+    print -r "(($1))"
+  else
+    # Don't use ~ because of this bug in zsh <= 5.9:
+    # https://www.zsh.org/mla/workers/2023/msg00718.html
+    print -r "(^(^(${(j:)|^(:)@})))"
+  fi
 }
 
 p_or() {
   [[ $@ ]] || failkq 1 "At least one pattern expected"
   # Double ( ) to never be interpreted as a qualifier
-  print -r -- "((${(j:|:)@}))"
+  print -r "((${(j:|:)@}))"
+}
+
+p_map_not() {
+  local pattern
+  for pattern in $@; do
+    print -r "(^($pattern))"
+  done
 }
 
 p_file_with_tag_group() {
-  print -r -- "*[[]${1}[]]*"
+  print -r "*[[]($1)[]]*"
 }
 
 tss_util_internal_file_pattern() {
@@ -291,21 +301,30 @@ tss_util_internal_file_pattern() {
 
   local IFS=$'\n'
 
-  if [[ $patterns ]]; then
-    regular_file_pattern=$(p_file_with_tag_group $(p_and $(p_tag_group_with_tag $patterns)))
-    accept_non_regular=
-  else
-    regular_file_pattern="*"
-    accept_non_regular=x
-  fi
+  # We do something a bit more complicated than it could be, in order to simplify the patterns built when possible
+
+  local tag_group_anti_patterns=($(p_map_tag_group_with_tag $anti_patterns))
   if [[ $not_all_patterns ]]; then
-    regular_file_pattern+="~$(p_file_with_tag_group $(p_and $(p_tag_group_with_tag $not_all_patterns)))"
+    tag_group_anti_patterns+=($(p_and $(p_map_tag_group_with_tag $not_all_patterns)))
   fi
-  # $anti_patterns last to avoid introducing (|) before ~, waiting for more info on:
-  # https://www.zsh.org/mla/workers/2023/msg00719.html
-  # There's still the issue of user-given patterns that contain (|) themselves.
-  if [[ $anti_patterns ]]; then
-    regular_file_pattern+="~$(p_file_with_tag_group $(p_or $(p_tag_group_with_tag $anti_patterns)))"
+
+  if [[ $patterns ]]; then
+    accept_non_regular=
+    # Optimize the simplest case
+    if [[ $#patterns -eq 1 && ! $tag_group_anti_patterns ]]; then
+      regular_file_pattern=$(p_file_with_tag_group $(p_map_tag_group_with_tag $patterns[1]))
+    else
+      tag_group_anti_patterns+=($(p_map_not $(p_map_tag_group_with_tag $patterns)))
+      regular_file_pattern=$(p_file_with_tag_group "(^$(p_or $tag_group_anti_patterns))")
+    fi
+
+  else
+    accept_non_regular=x
+    if [[ $tag_group_anti_patterns ]]; then
+      regular_file_pattern="(^($(p_file_with_tag_group $(p_or $tag_group_anti_patterns))))"
+    else
+      regular_file_pattern="*"
+    fi
   fi
 }
 
