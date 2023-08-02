@@ -286,6 +286,11 @@ p_map_not() {
   done
 }
 
+p_not() {
+  (( $# == 1 )) || failkq 1 "Exactly one pattern expected"
+  p_map_not "$1"
+}
+
 p_file_with_tag_group() {
   print -r "*[[]($1)[]]*"
 }
@@ -315,13 +320,13 @@ tss_util_internal_file_pattern() {
       regular_file_pattern=$(p_file_with_tag_group $(p_map_tag_group_with_tag $patterns[1]))
     else
       tag_group_anti_patterns+=($(p_map_not $(p_map_tag_group_with_tag $patterns)))
-      regular_file_pattern=$(p_file_with_tag_group "(^$(p_or $tag_group_anti_patterns))")
+      regular_file_pattern=$(p_file_with_tag_group $(p_not $(p_or $tag_group_anti_patterns)))
     fi
 
   else
     accept_non_regular=x
     if [[ $tag_group_anti_patterns ]]; then
-      regular_file_pattern="(^($(p_file_with_tag_group $(p_or $tag_group_anti_patterns))))"
+      regular_file_pattern=$(p_not $(p_file_with_tag_group $(p_or $tag_group_anti_patterns)))
     else
       regular_file_pattern="*"
     fi
