@@ -1,6 +1,8 @@
-A command-line tool to manage files with tags, with completion provided for zsh.
+A command-line tool to manage files with `[tags]` in their name such as `IMG-2653[vacation alps].jpg`, with completion provided for zsh. Compatible with [TagSpaces](https://www.tagspaces.org/).
 
-**tss** manages [TagSpaces](https://www.tagspaces.org/)-style tags, i.e., tags in file names such as `IMG-2653[vacation alps].jpg`.
+**Status:** I consider it completed. I intend to fix bugs if I find any.
+
+**Feedback welcome.** Anyone is welcome to send me an email or open an issue for any reason or just to say hi.
 
 ## Basic features
 
@@ -29,7 +31,7 @@ $ tss query -t tag1 path/ -t <tab>  # Tags found on files that have tag1 in path
 $ tss add tag1 <tab>                # Files that don't have tag1
 ```
 
-Common tag suggestions added to `.zshrc`, which you can edit to your liking:
+Common tag suggestions added to `.zshrc`, that you can edit to your liking:
 ```shell
 tss_tags_ratings=(1star 2star 3star 4star 5star)
 tss_tags_media=(toread reading read towatch watched)
@@ -42,13 +44,11 @@ You can declare one or more *locations* (paths where you keep tagged files) to g
 $ tss location init ~/photos  # That's it
 ```
 
-## Pros
+## Why?
 
-A very simple, effective but zero-commitment concept:
+Most tagging systems are either system-specific (the one provided by your OS) or specific to certain file types (audio/video and image tags).
 
-1. By now you understand how you could tag and search your files with tools you already have: your file manager and desktop search, basic commands, `vidir`, etc. Feel free to try it by yourself and come back in a month if you like it.
-2. Install `tss` (or TagSpaces for a graphical tool) and you get more efficient and powerful actions and queries.
-3. Uninstall at any time without any loss of data.
+In contrast, putting `[tags]` in filenames works for any file, on any system, and instantly integrates with tools you already have: your file manager and desktop search, basic commands, `fzf`, `vidir`, etc. `tss` (or TagSpaces for a graphical tool) only comes as a bonus for more efficient and powerful actions and queries, and you can uninstall it without any loss of data.
 
 ## Requirements
 
