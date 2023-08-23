@@ -1,0 +1,11 @@
+# A example contextual action for use in e.g. Dolphin
+[Desktop Entry]
+Type=Service
+Hidden=false
+MimeType=audio/*;image/*;video/*
+Actions=tss
+
+[Desktop Action tss]
+TryExec=tss
+Name=tss add change_me
+Exec=tss add change_me %U
