@@ -7,5 +7,6 @@ Actions=tss
 
 [Desktop Action tss]
 TryExec=tss
+Icon=tag
 Name=tss add change_me
 Exec=tss add change_me %U
