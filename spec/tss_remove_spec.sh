@@ -18,10 +18,19 @@ Describe 'tss remove'
     The path "$dir" should be directory
   End
 
+  It "doesn't touch a file if this is a dry run"
+    local file="_test/file[tag11 tag22].ext"
+    touch "$file"
+    When call tss remove 'tag1*' "$file" -n --print-path
+    The output should equal "_test/file[tag22].ext"
+    The file "$file" should be exist
+  End
+
   It 'removes a tag matching a pattern from a file with a tag group'
     local file="_test/file[tag11 tag22].ext"
     touch "$file"
-    When call tss remove 'tag1*' "$file"
+    When call tss remove 'tag1*' "$file" --print-path
+    The output should equal "_test/file[tag22].ext"
     The file "$file" should not be exist
     The file "_test/file[tag22].ext" should be exist
   End
@@ -29,7 +38,8 @@ Describe 'tss remove'
   It 'leaves a file without the given tag unchanged'
     local file="_test/file[tag1 tag2].ext"
     touch "$file"
-    When call tss remove tag3 "$file"
+    When call tss remove tag3 "$file" --print-path
+    The output should equal "_test/file[tag1 tag2].ext"
     The file "$file" should be exist
   End
 

@@ -1,8 +1,8 @@
 A command-line tool to manage files with `[tags]` in their name such as `IMG-2653[vacation alps].jpg`, with completion provided for zsh. Compatible with [TagSpaces](https://www.tagspaces.org/).
 
-**Status:** I consider it completed. I intend to fix bugs if I find any.
+**Status:** I consider it completed. I intend to fix bugs if I find any and I may add small features over time.
 
-**Feedback welcome.** Anyone is welcome to send me an email or open an issue for any reason or just to say hi.
+**Discuss.** I have few users. Anyone using tss is welcome to send me an email or open an issue for any reason or just to say hi.
 
 ## Basic features
 

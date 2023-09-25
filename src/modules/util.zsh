@@ -76,6 +76,12 @@ require_parameter() {
   fi
 }
 
+require_writable() {
+  if [[ ${(Pt)1} = *readonly* ]]; then
+    failk 2 "Parameter ${(qq)1} must be writable"
+  fi
+}
+
 # Adapted from https://stackoverflow.com/a/76699936
 is_valid_pattern() {
   { : ${~1} } always { TRY_BLOCK_ERROR=0 } &>/dev/null

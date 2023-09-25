@@ -21,10 +21,19 @@ Describe 'tss add'
     The path "$dir" should be directory
   End
 
+  It "doesn't change a file if this is a dry run"
+    local file="_test/file[tag1 tag2].ext"
+    touch "$file"
+    When call tss add tag3 "$file" -n --print-path
+    The output should equal "_test/file[tag1 tag2 tag3].ext"
+    The file "$file" should be exist
+  End
+
   It 'adds a tag to a file with a tag group'
     local file="_test/file[tag1 tag2].ext"
     touch "$file"
-    When call tss add tag3 "$file"
+    When call tss add tag3 "$file" --print-path
+    The output should equal "_test/file[tag1 tag2 tag3].ext"
     The file "$file" should not be exist
     The file "_test/file[tag1 tag2 tag3].ext" should be exist
   End
@@ -78,6 +87,14 @@ Describe 'tss add'
     When call tss add 'tag1 tag3' "$file"
     The file "$file" should not be exist
     The file "_test/file[tag1 tag2 tag3].ext" should be exist
+  End
+
+  It 'leaves a file unchanged if all tags already present'
+    local file="_test/file[tag1 tag2].ext"
+    touch "$file"
+    When call tss add 'tag1 tag2' "$file" --print-path
+    The output should equal "_test/file[tag1 tag2].ext"
+    The file "$file" should be exist
   End
 
   ExampleGroup 'Special characters'

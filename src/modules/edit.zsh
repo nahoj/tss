@@ -55,11 +55,14 @@ EOF
   [[ ! $error ]]
 }
 
-set_file_tags() {
-  local file_path=$1
+internal_set_file_tags() {
+  require_parameter file_path 'scalar*'
+  require_writable file_path
   require_exists_taggable "$file_path"
-  shift
-  local tags=($@)
+  require_parameter tags 'array*'
+  require_parameter dry_run 'scalar*'
+
+  unsetopt warn_nested_var
 
   # if tags empty, clean file
   if [[ $#tags -eq 0 ]]; then
@@ -92,7 +95,10 @@ set_file_tags() {
       local new_file_path
       new_file_path="${file_path:h}/$new_file_name"
       require_does_not_exist "$new_file_path"
-      mv "$file_path" "$new_file_path"
+      if [[ ! $dry_run ]]; then
+        mv "$file_path" "$new_file_path"
+      fi
+      file_path=$new_file_path
     fi
   fi
 }
@@ -101,23 +107,34 @@ internal_add_remove_one_file() {
   require_parameter add_tags 'array*'
   require_parameter remove_patterns 'array*'
   require_parameter file_path 'scalar*'
+  require_writable file_path
   require_well_formed "$file_path"
   require_exists_taggable "$file_path"
+  require_parameter dry_run 'scalar*'
+
+  unsetopt warn_nested_var
 
   local -a file_tags
   internal_file_tags_name_only
 
-  local -aU new_tags=(${file_tags:#${~:-(${(j:|:)remove_patterns})}} $add_tags)
+  local -aU tags=(${file_tags:#${~:-(${(j:|:)remove_patterns})}} $add_tags)
 
-  if ! arrayeq new_tags file_tags; then
-    set_file_tags "$file_path" $new_tags
+  if ! arrayeq tags file_tags; then
+    internal_set_file_tags "$file_path" $tags
   fi
 }
 
 internal_add_remove() {
   require_parameter action 'scalar*'
+  require_parameter dry_run_opt 'array*'
+  require_parameter print_path_opt 'array*'
   require_parameter tags_opts 'array*'
 
+  # Process options (except -t)
+  local -r dry_run=$dry_run_opt
+  local -r print_path=$print_path_opt
+
+  # Process positional arguments
   if [[ ${1:-} = -- ]]; then
     shift
   fi
@@ -161,7 +178,13 @@ internal_add_remove() {
 
   local file_path error
   for file_path in $file_paths; do
-    internal_add_remove_one_file || error=x
+    {
+      internal_add_remove_one_file || error=x
+    } always {
+      if [[ $print_path ]]; then
+        print -r -- "$file_path"
+      fi
+    }
   done
 
   local location
@@ -173,8 +196,8 @@ internal_add_remove() {
 }
 
 tss_add() {
-  local help tags_opts
-  zparseopts -D -E -F - -help=help {t,-tags}+:=tags_opts
+  local help dry_run_opt print_path_opt tags_opts
+  zparseopts -D -E -F - -help=help {n,-dry-run}=dry_run_opt -print-path=print_path_opt {t,-tags}+:=tags_opts
 
   if [[ -n $help ]]; then
     cat <<EOF
@@ -185,6 +208,8 @@ or:    tss add '' <file>... -t '<tag> ...'  # to get filtered tag suggestions
 Add one or more tags to one or more files if not already present.
 
 Options:
+  -n, --dry-run         $label_generic_dry_run_descr
+  --print-path          $label_add_print_path_descr
   -t, --tags <tag ...>  $label_add_tags_descr
   --help                $label_generic_help_help_descr
 EOF
@@ -196,8 +221,8 @@ EOF
 }
 
 tss_remove() {
-  local help tags_opts
-  zparseopts -D -E -F - -help=help {t,-tags}+:=tags_opts
+  local help dry_run_opt print_path_opt tags_opts
+  zparseopts -D -E -F - -help=help {n,-dry-run}=dry_run_opt -print-path=print_path_opt {t,-tags}+:=tags_opts
 
   if [[ -n $help ]]; then
     cat <<EOF
@@ -208,6 +233,8 @@ or:    tss remove '' <file>... -t '<pattern> ...'  # to get filtered tag suggest
 Remove all tags matching any of the given patterns from one or more files.
 
 Options:
+  -n, --dry-run                 $label_generic_dry_run_descr
+  --print-path                  $label_remove_print_path_descr
   -t, --tags <pattern ...>      $label_remove_tags_descr
   --help                        $label_generic_help_help_descr
 
