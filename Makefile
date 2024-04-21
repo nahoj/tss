@@ -58,5 +58,5 @@ uninstall:
 .PHONY: uninstall
 
 test:
-	"$$(which shellspec)" --shell zsh
+	shellspec --shell zsh
 .PHONY: test
