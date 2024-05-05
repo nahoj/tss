@@ -17,17 +17,17 @@ all:
 
 install:
 	mkdir -p "$(TSS_PATH)"
-	install -Dm644 "$(SRC_DIR)"/modules/*.zsh "$(TSS_PATH)"
+	install -m644 "$(SRC_DIR)"/modules/*.zsh "$(TSS_PATH)"
 
 	mkdir -p "$(ZSH_FUNCTIONS_DIR)"
-	install -Dm644 "$(SRC_DIR)/functions/tss.zsh" "$(ZSH_FUNCTIONS_DIR)/tss"
-	install -Dm644 "$(SRC_DIR)/functions/_tss.zsh" "$(ZSH_FUNCTIONS_DIR)/_tss"
+	install -m644 "$(SRC_DIR)/functions/tss.zsh" "$(ZSH_FUNCTIONS_DIR)/tss"
+	install -m644 "$(SRC_DIR)/functions/_tss.zsh" "$(ZSH_FUNCTIONS_DIR)/_tss"
 
 	mkdir -p "$(BIN_DIR)"
-	install -Dm755 "$(SRC_DIR)/bin/tss" "$(BIN_DIR)"
+	install -m755 "$(SRC_DIR)/bin/tss" "$(BIN_DIR)"
 
 	mkdir -p "$(KDE_SERVICE_MENUS_DIR)"
-	install -Dm755 "$(SRC_DIR)/kde/tss_service_action.desktop" "$(KDE_SERVICE_MENUS_DIR)"
+	install -m755 "$(SRC_DIR)/kde/tss_service_action.desktop" "$(KDE_SERVICE_MENUS_DIR)"
 
 	zsh postinstall.zsh "$(ZSH_FUNCTIONS_DIR)"
 .PHONY: install
