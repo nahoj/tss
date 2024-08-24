@@ -1,8 +1,10 @@
 local label_add_descr="Add tags to one or more files."
-local label_add_print_path_descr="Print the new path of each given file (even if unchanged)."
+local label_add_quiet_descr="Be less verbose. In particular, don't print the new path of each given file."
 local label_add_tags_descr="Add the given tags, in addition to tags given in the first positional argument."
 
 local label_clean_descr="Remove tag group from one or more files."
+local label_clean_quiet_descr=$label_add_quiet_descr
+
 local label_comp_descr="Completion utilities."
 
 local label_files_descr="List files with tags matching the given patterns."
@@ -32,7 +34,7 @@ local label_location_remove_descr="Make a directory no longer a location."
 local label_query_descr="Alias for 'files'."
 
 local label_remove_descr="Remove tags from one or more files."
-local label_remove_print_path_descr=$label_add_print_path_descr
+local label_remove_quiet_descr=$label_add_quiet_descr
 local label_remove_tags_descr="Remove tags matching the given patterns, in addition to patterns given in the first positional argument."
 
 local label_tags_descr="List tags present on one or more files."

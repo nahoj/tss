@@ -6,7 +6,7 @@ Describe 'tss add'
   It 'rejects an invalid tag'
     local file="_test/file.ext"
     touch "$file"
-    When call tss add '[' "$file"
+    When call tss add -q '[' "$file"
     The status should equal 1
     The stderr should not equal ""
     The file "$file" should be exist
@@ -15,7 +15,7 @@ Describe 'tss add'
   It "doesn't tag a directory"
     local dir="_test/dir"
     mkdir "$dir"
-    When call tss add tag "$dir"
+    When call tss add -q tag "$dir"
     The status should equal 1
     The stderr should not equal ""
     The path "$dir" should be directory
@@ -24,7 +24,7 @@ Describe 'tss add'
   It "doesn't change a file if this is a dry run"
     local file="_test/file[tag1 tag2].ext"
     touch "$file"
-    When call tss add tag3 "$file" -n --print-path
+    When call tss add tag3 "$file" -n
     The output should equal "_test/file[tag1 tag2 tag3].ext"
     The file "$file" should be exist
   End
@@ -32,7 +32,7 @@ Describe 'tss add'
   It 'adds a tag to a file with a tag group'
     local file="_test/file[tag1 tag2].ext"
     touch "$file"
-    When call tss add tag3 "$file" --print-path
+    When call tss add tag3 "$file"
     The output should equal "_test/file[tag1 tag2 tag3].ext"
     The file "$file" should not be exist
     The file "_test/file[tag1 tag2 tag3].ext" should be exist
@@ -41,7 +41,7 @@ Describe 'tss add'
   It 'adds a tag to a file with an empty tag group'
     local file="_test/file[].ext"
     touch "$file"
-    When call tss add tag "$file"
+    When call tss add -q tag "$file"
     The file "$file" should not be exist
     The file "_test/file[tag].ext" should be exist
   End
@@ -49,7 +49,7 @@ Describe 'tss add'
   It 'adds a tag to a file with no tag group and which has an extension'
     local file="_test/file.ext"
     touch "$file"
-    When call tss add tag "$file"
+    When call tss add -q tag "$file"
     The file "$file" should not be exist
     The file "_test/file[tag].ext" should be exist
   End
@@ -57,7 +57,7 @@ Describe 'tss add'
   It 'adds a tag to a file with no tag group and no extension'
     local file="_test/file"
     touch "$file"
-    When call tss add tag "$file"
+    When call tss add -q tag "$file"
     The file "$file" should not be exist
     The file "_test/file[tag]" should be exist
   End
@@ -66,7 +66,7 @@ Describe 'tss add'
     local file1="_test/file1[tag1 tag2].ext"
     local file2="_test/file2.ext"
     touch "$file1" "$file2"
-    When call tss add tag3 "$file1" "$file2"
+    When call tss add -q tag3 "$file1" "$file2"
     The file "$file1" should not be exist
     The file "_test/file1[tag1 tag2 tag3].ext" should be exist
     The file "$file2" should not be exist
@@ -76,7 +76,7 @@ Describe 'tss add'
   It 'adds several tags to a file, normalizing spaces'
     local file="_test/file[tag1 tag2].ext"
     touch "$file"
-    When call tss add ' tag3   tag4 ' "$file"
+    When call tss add -q ' tag3   tag4 ' "$file"
     The file "$file" should not be exist
     The file "_test/file[tag1 tag2 tag3 tag4].ext" should be exist
   End
@@ -84,7 +84,7 @@ Describe 'tss add'
   It 'only adds missing tags to a file'
     local file="_test/file[tag1 tag2].ext"
     touch "$file"
-    When call tss add 'tag1 tag3' "$file"
+    When call tss add -q 'tag1 tag3' "$file"
     The file "$file" should not be exist
     The file "_test/file[tag1 tag2 tag3].ext" should be exist
   End
@@ -92,7 +92,7 @@ Describe 'tss add'
   It 'leaves a file unchanged if all tags already present'
     local file="_test/file[tag1 tag2].ext"
     touch "$file"
-    When call tss add 'tag1 tag2' "$file" --print-path
+    When call tss add 'tag1 tag2' "$file"
     The output should equal "_test/file[tag1 tag2].ext"
     The file "$file" should be exist
   End
@@ -101,7 +101,7 @@ Describe 'tss add'
     Example
       local file="_test/file[a].ext"
       touch "$file"
-      When call tss add '*' "$file"
+      When call tss add -q '*' "$file"
       The status should equal 0
       The file "_test/file[a *].ext" should be exist
     End
@@ -109,7 +109,7 @@ Describe 'tss add'
     Example
       local file="_test/file[a *].ext"
       touch "$file"
-      When call tss add '*' "$file"
+      When call tss add -q '*' "$file"
       The status should equal 0
       The file "$file" should be exist
     End
