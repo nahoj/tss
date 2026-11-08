@@ -1,0 +1,22 @@
+src/modules/index.zsh
+  s_26b0dde723bb63::t_a2d120989b2339 149-152,156
+  s_26b0dde723bb63::t_64c6de2cc19461 65-66
+spec/tss_location_spec.sh
+  s_26b0dde723bb63::t_294fcc3b98b69e 113-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cb7cd149e4bf40b1c12e61922094de43c5ed8949",
+  "prompts": {},
+  "sessions": {
+    "s_26b0dde723bb63": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "52831fae-fb96-4735-b113-9743fdf781f5",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Johan Grande <nahoj@crans.org>"
+    }
+  }
+}
