@@ -172,8 +172,11 @@ with_cd() {
     dir=./$dir
   fi
 
-  local -a setup_cmd=(cd -- "$dir")
-  local -a cleanup_cmd=(cd -- "$PWD")
+  # -q: Don't run the chpwd hooks of the user's shell, where tss may run as a
+  # function (e.g. for completion), as they may print output, record history,
+  # or source files from the new directory, which may be untrusted.
+  local -a setup_cmd=(cd -q -- "$dir")
+  local -a cleanup_cmd=(cd -q -- "$PWD")
   always_with_trap_INT setup_cmd cleanup_cmd "$@"
 }
 

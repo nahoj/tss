@@ -280,6 +280,42 @@ Describe 'tss location'
     End
   End
 
+  # When tss runs as a function in the user's shell, as for completion, its
+  # changes of directory must not run the user's chpwd hooks: some print
+  # output or record history, others source files from the new directory,
+  # whose contents may come from an untrusted source
+  Describe 'index build in a shell with chpwd hooks'
+    BeforeEach 'cd _test && make_location'
+    AfterEach 'cd "$SHELLSPEC_PROJECT_ROOT"'
+
+    make_location() {
+      mkdir -p loc/.ts
+      print -r '[]' >loc/.ts/tsi.json
+      touch loc/file.ext
+    }
+
+    # Run tss with a chpwd function and a chpwd_functions hook that each
+    # create a marker file, then print the current directory
+    tss_with_chpwd_hooks_then_pwd() {
+      chpwd() { touch "$SHELLSPEC_PROJECT_ROOT/_test/chpwd_marker"; }
+      chpwd_hook() { touch "$SHELLSPEC_PROJECT_ROOT/_test/chpwd_functions_marker"; }
+      chpwd_functions=(chpwd_hook)
+      tss "$@"
+      print -r -- "$PWD"
+    }
+
+    markers() { find "$SHELLSPEC_PROJECT_ROOT/_test" -name '*_marker'; }
+
+    It 'builds the index without running them, and restores the current directory'
+      When run tss_with_chpwd_hooks_then_pwd location index build loc
+      The status should equal 0
+      The output should equal "$PWD"
+      The stderr should include "Building index"
+      The contents of file loc/.ts/tsi.json should include '"name": "file.ext"'
+      The result of function markers should equal ""
+    End
+  End
+
   # The contents of .ts may come from an untrusted source: writes there must
   # never go through a symlink, which could point to any file
   Describe 'with symlinks in .ts'
