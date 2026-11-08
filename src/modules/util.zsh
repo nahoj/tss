@@ -106,6 +106,11 @@ status() {
 # if the setup command succeeded, even if the command fails or SIGINT is
 # received; and if SIGINT was received, re-send it once cleanup is done.
 #
+# SIGINT aborts the setup command and the command, not the cleanup command.
+# With nested calls, it aborts the commands of all of them, cleanup commands
+# are run from the innermost call to the outermost, and only then does the
+# caller of the outermost call get SIGINT, once.
+#
 # <setup_cmd> and <cleanup_cmd> are the names of array variables holding a
 # command and its arguments. Commands are run as is, never re-parsed as shell
 # code, so their arguments may contain arbitrary data (e.g. file paths).
@@ -116,29 +121,41 @@ always_with_trap_INT() {
   local cleanup_cmd_name=$2
   shift 2
 
-  local interrupted= set_up=
-  local trap_cmd='unsetopt warn_nested_var; interrupted=x; return 130'
-  # (the return code should never get out of the function         ^)
+  local set_up= interrupted=
   {
     () {
-      trap "$trap_cmd" INT
+      # On SIGINT, abort everything up to the 'always' block below (that of
+      # the innermost call), as an interactive shell does by default, whereas
+      # a non-interactive one would exit at once. (A trap running 'return'
+      # would only leave the function being run, with the status of the
+      # command it interrupted, e.g. 0, so that its caller would go on.)
+      TRAPINT() { return $(( 128 + $1 )) }
       "${(@P)setup_cmd_name}" && typeset -g set_up=x && "$@"
     } "$@"
   } always {
-    {
-      # Don't undo a setup that failed, e.g. remove a lock file that another
-      # process holds
-      if [[ $set_up ]]; then
-        () {
-          trap "$trap_cmd" INT
-          "${(@P)cleanup_cmd_name}"
-        }
-      fi
-    } always {
-      if [[ $interrupted ]]; then
-        kill -s INT "$$"
-      fi
-    }
+    # Don't undo a setup that failed, e.g. remove a lock file that another
+    # process holds. If the cleanup fails, still run the rest of this block
+    # (this doesn't change the status, which is always that of the block above).
+    if [[ $set_up ]]; then
+      () {
+        # Don't let SIGINT abort the cleanup, but remember it
+        trap 'typeset -g interrupted=x' INT
+        "${(@P)cleanup_cmd_name}"
+      } || true
+    fi
+    # TRY_BLOCK_INTERRUPT is 1 if the block above was aborted on SIGINT. Its
+    # value at the end of this block says whether to keep aborting after it.
+    if (( TRY_BLOCK_INTERRUPT )) || [[ $interrupted ]]; then
+      # Re-send SIGINT, and keep aborting if this aborts this block. In a
+      # nested call, the TRAPINT above of the enclosing call gets it, which
+      # does. Otherwise, the caller's trap applies, if any; or zsh's default
+      # action, which also does in an interactive shell, and exits otherwise.
+      TRY_BLOCK_INTERRUPT=1
+      kill -s INT "$$"
+      # Still here: a trap of the caller handled SIGINT, or it is ignored.
+      # Don't interrupt the caller any further.
+      TRY_BLOCK_INTERRUPT=0
+    fi
   }
 }
 

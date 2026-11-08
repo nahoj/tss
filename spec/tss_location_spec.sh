@@ -379,4 +379,143 @@ Describe 'tss location'
       The result of function ts_contents should equal tsi.json
     End
   End
+
+  # On SIGINT, the index build must undo what it set up (lock file, current
+  # directory, temporary file), then let SIGINT reach its caller, once
+  Describe 'interrupted by SIGINT'
+    BeforeEach 'cd _test'
+    AfterEach 'cd "$SHELLSPEC_PROJECT_ROOT"'
+
+    # Run the given zsh code in a child zsh process where tss is loaded, and
+    # where 'interrupt' sends SIGINT to the current process, as an external
+    # command does below. SIGINT kills the process unless the code traps it.
+    run_zsh() {
+      zsh -f -c '
+        . "$1/src/functions/tss.zsh"
+        interrupt() {
+          sh -c "kill -s INT \$PPID"
+          print -r "continued after SIGINT"
+        }
+        eval "$2"
+      ' zsh "$SHELLSPEC_PROJECT_ROOT" "$1"
+    }
+
+    Describe 'in nested blocks with a cleanup'
+      # Run tss with the modules of tss plus one overriding 'tss util' to run
+      # the given internal command, with tss's options and modules loaded
+      BeforeEach 'make_modules && mkdir dir'
+
+      make_modules() {
+        mkdir modules
+        ln -s "$TSS_PATH"/*.zsh modules/
+        print -r 'tss_util() { "$@" }' >modules/zz_spec.zsh
+      }
+
+      run_zsh_with_modules() {
+        TSS_PATH=$PWD/modules run_zsh "
+          tmp_setup=(create_new_file tmp)
+          tmp_cleanup=(rm -f -- tmp)
+          $1
+        "
+      }
+
+      Describe 'in the innermost command'
+        # Nested as in the index build: lock file, current directory,
+        # temporary file (in dir)
+        Parameters
+          1 'with_lock_file file interrupt'
+          2 'with_lock_file file with_cd dir interrupt'
+          3 'with_lock_file file with_cd dir always_with_trap_INT tmp_setup tmp_cleanup interrupt'
+        End
+
+        It "dies from SIGINT received at depth $1, after every cleanup"
+          When run run_zsh_with_modules "
+            tss util $2
+            print -r \"returned \$?\"
+          "
+          The status should equal 130
+          The output should equal ""
+          The path file.LOCK should not be exist
+          The path dir/tmp should not be exist
+        End
+
+        It "lets the caller trap SIGINT received at depth $1, once, after every cleanup"
+          When run run_zsh_with_modules "
+            trap 'print -r \"caller trap\"' INT
+            tss util $2
+            print -r \"returned \$? in \${PWD:t}\"
+          "
+          The status should equal 0
+          The line 1 of output should equal "caller trap"
+          The line 2 of output should equal "returned 130 in _test"
+          The lines of output should equal 2
+          The path file.LOCK should not be exist
+          The path dir/tmp should not be exist
+        End
+      End
+
+      It 'completes the innermost cleanup if SIGINT is received then, and dies from it after every cleanup'
+        When run run_zsh_with_modules "
+          tmp_cleanup=(eval 'interrupt; rm -f -- tmp')
+          tss util with_lock_file file with_cd dir always_with_trap_INT tmp_setup tmp_cleanup true
+          print -r \"returned \$?\"
+        "
+        The status should equal 130
+        The output should equal "continued after SIGINT"
+        The path file.LOCK should not be exist
+        The path dir/tmp should not be exist
+      End
+
+      It 'lets the caller trap SIGINT even if the cleanup fails'
+        When run run_zsh_with_modules "
+          tmp_cleanup=(eval 'rm -f -- tmp; false')
+          trap 'print -r \"caller trap\"' INT
+          tss util always_with_trap_INT tmp_setup tmp_cleanup interrupt
+          print -r \"returned \$?\"
+        "
+        The status should equal 0
+        The line 1 of output should equal "caller trap"
+        The line 2 of output should equal "returned 130"
+        The lines of output should equal 2
+        The path tmp should not be exist
+      End
+    End
+
+    Describe 'during an index build'
+      # 'find' interrupts tss, which runs it in the build's innermost block
+      BeforeEach 'make_location && make_interrupting_find'
+
+      make_location() {
+        mkdir -p loc/.ts
+        print -r '[]' >loc/.ts/tsi.json
+        touch loc/file.ext
+      }
+
+      make_interrupting_find() {
+        mkdir bin
+        printf '#!/bin/sh\nkill -s INT $PPID\n' >bin/find
+        chmod +x bin/find
+      }
+
+      ts_contents() { ls -A loc/.ts; }
+
+      Parameters
+        'run'                'tss location index build loc'
+        'run on the left of ||' 'tss location index build loc || print -r "failed: $?"'
+      End
+
+      It "dies from SIGINT, leaving the index unchanged and no lock or temporary file, when $1"
+        When run run_zsh "
+          PATH=\$PWD/bin:\$PATH
+          $2
+          print -r \"returned \$?\"
+        "
+        The status should equal 130
+        The output should equal ""
+        The stderr should include "Building index"
+        The result of function ts_contents should equal tsi.json
+        The contents of file loc/.ts/tsi.json should equal '[]'
+      End
+    End
+  End
 End
