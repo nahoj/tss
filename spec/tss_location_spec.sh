@@ -50,16 +50,75 @@ Describe 'tss location'
     End
   End
 
+  Describe 'index build'
+    BeforeEach 'cd _test && make_location'
+    AfterEach 'cd "$SHELLSPEC_PROJECT_ROOT"'
+
+    make_location() {
+      mkdir -p loc/.ts
+      print -r '[]' >loc/.ts/tsi.json
+      touch loc/a.ext loc/b.ext loc/c.ext
+    }
+
+    # Sorted names in the index, on one line
+    index_names() { jq -r '[.[].name] | sort | join(" ")' loc/.ts/tsi.json; }
+    ts_contents() { ls -A loc/.ts; }
+
+    # Run tss in the given context, keeping its status (or 1 for 'if'). zsh
+    # applies err_return differently in a function called on the left of '||'
+    # or '&&' or as an 'if' condition, e.g. in the completion function.
+    tss_in() {
+      local context=$1
+      shift
+      case $context in
+        '||') tss "$@" || return ;;
+        '&&') tss "$@" && : ;;
+        if) if tss "$@"; then :; else return 1; fi ;;
+      esac
+    }
+
+    Describe 'in a condition'
+      Parameters
+        'on the left of ||'   '||'
+        'on the left of &&'   '&&'
+        'as an if condition'  if
+      End
+
+      It "builds the complete index when run $1"
+        When run tss_in "$2" location index build loc
+        The status should equal 0
+        The stderr should include "Building index"
+        The result of function index_names should equal ". a.ext b.ext c.ext"
+        The result of function ts_contents should equal tsi.json
+      End
+
+      It "inits a location with a complete index when run $1"
+        rm -r loc/.ts
+        When run tss_in "$2" location init loc
+        The status should equal 0
+        The stderr should include "Building index"
+        The result of function index_names should equal ". a.ext b.ext c.ext"
+        The result of function ts_contents should equal tsi.json
+      End
+    End
+
+    It 'inits a location with no files'
+      rm -r loc/.ts loc/*.ext
+      When run tss location init loc
+      The status should equal 0
+      The stderr should include "Building index"
+      The result of function index_names should equal "."
+      The result of function ts_contents should equal tsi.json
+    End
+  End
+
   # Paths must never be re-parsed as shell code, nor taken for command options
   Describe 'index build with special characters in paths'
     # Work inside _test so that any word of a mis-parsed path lands there
     BeforeEach 'cd _test'
     AfterEach 'cd "$SHELLSPEC_PROJECT_ROOT"'
 
-    # Run tss with the given arguments, then print the current directory.
-    # Meant for 'When run': 'When call' runs its command on the left of '&&',
-    # a context in which the index build currently fails for an unrelated
-    # reason (err_return triggered by '(( i++ ))' when i is 0).
+    # Run tss with the given arguments, then print the current directory
     tss_then_pwd() {
       tss "$@"
       print -r -- "$PWD"
@@ -209,9 +268,7 @@ Describe 'tss location'
       PATH="$PWD/bin:$PATH" tss "$@"
     }
 
-    # Run tss on the left of '||'. This currently makes the index build fail
-    # after the first entry, for an unrelated reason (err_return triggered by
-    # '(( i++ ))' when i is 0).
+    # Run tss on the left of '||'
     tss_or_true() {
       tss "$@" || true
     }

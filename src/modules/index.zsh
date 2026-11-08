@@ -168,7 +168,7 @@ tss_location_index_build() {
           file_path=${file_path#./}
           uuid=$(printf '%08x-%s' $(( (uuid_start + i) % 0x100000000 )) "$uuid_suffix")
           internal_print_json_file_object
-          (( i++ ))
+          i+=1
         done
       } >>$new_index || return $?
     fi
