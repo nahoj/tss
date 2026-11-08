@@ -99,9 +99,21 @@ status() {
   print $?
 }
 
+# Usage: always_with_trap_INT <setup_cmd> <cleanup_cmd> <cmd>...
+#
+# Run the setup command then, if it succeeds, the command given by the
+# remaining arguments. Then, in any case, run the cleanup command, even if
+# SIGINT is received; and if it was, re-send it once cleanup is done.
+#
+# <setup_cmd> and <cleanup_cmd> are the names of array variables holding a
+# command and its arguments. Commands are run as is, never re-parsed as shell
+# code, so their arguments may contain arbitrary data (e.g. file paths).
 always_with_trap_INT() {
-  local try_cmd=$1
-  local always_cmd=$2
+  require_parameter "$1" 'array*'
+  require_parameter "$2" 'array*'
+  local setup_cmd_name=$1
+  local cleanup_cmd_name=$2
+  shift 2
 
   local interrupted=
   local trap_cmd='unsetopt warn_nested_var; interrupted=x; return 130'
@@ -109,13 +121,13 @@ always_with_trap_INT() {
   {
     () {
       trap "$trap_cmd" INT
-      eval "$try_cmd"
-    }
+      "${(@P)setup_cmd_name}" && "$@"
+    } "$@"
   } always {
     {
       () {
         trap "$trap_cmd" INT
-        eval "$always_cmd"
+        "${(@P)cleanup_cmd_name}"
       }
     } always {
       if [[ $interrupted ]]; then
@@ -129,12 +141,16 @@ with_cd() {
   local dir=$1
   shift
 
-  local return_dir
-  return_dir=$PWD
+  # With zsh's cd, '--' doesn't prevent '-', '-<n>' or '+<n>' from being
+  # interpreted as directory stack entries; a leading './' does (and also
+  # prevents a lookup in $cdpath).
+  if [[ $dir != /* ]]; then
+    dir=./$dir
+  fi
 
-  always_with_trap_INT \
-    "cd $dir; ${(j: :)${(q)@}}" \
-    "cd $return_dir"
+  local -a setup_cmd=(cd -- "$dir")
+  local -a cleanup_cmd=(cd -- "$PWD")
+  always_with_trap_INT setup_cmd cleanup_cmd "$@"
 }
 
 with_lock_file() {
@@ -147,9 +163,9 @@ with_lock_file() {
     fail "File is locked: ${(qqq)file}"
   fi
 
-  always_with_trap_INT \
-    "touch $lock_file; ${(j: :)${(q)@}}" \
-    "rm -f $lock_file"
+  local -a setup_cmd=(touch -- "$lock_file")
+  local -a cleanup_cmd=(rm -f -- "$lock_file")
+  always_with_trap_INT setup_cmd cleanup_cmd "$@"
 }
 
 
