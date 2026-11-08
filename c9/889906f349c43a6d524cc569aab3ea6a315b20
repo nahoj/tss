@@ -1,0 +1,28 @@
+src/modules/util.zsh
+  s_26b0dde723bb63::t_fdd08bc23321a1 128-131
+  s_26b0dde723bb63::t_988c56e7b41b4a 109-112
+  s_26b0dde723bb63::t_d5055317638018 113,124,127,132,136,139-143,145,148,153-154,157-158
+  s_26b0dde723bb63::t_e09241ebdca96e 137-138,144
+  s_26b0dde723bb63::t_3615d6e3be9401 146-147,149-152,155-156
+spec/tss_location_spec.sh
+  s_26b0dde723bb63::t_128453e294b914 397,464
+  s_26b0dde723bb63::t_bd8a74337a2d27 422-454,457,459-460
+  s_26b0dde723bb63::t_abc70082030094 468-481
+  s_26b0dde723bb63::t_b97f5696be6edb 382-396,398-421,455-456,458,461-463,465-467,482-520
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c9889906f349c43a6d524cc569aab3ea6a315b20",
+  "prompts": {},
+  "sessions": {
+    "s_26b0dde723bb63": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "52831fae-fb96-4735-b113-9743fdf781f5",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Johan Grande <nahoj@crans.org>"
+    }
+  }
+}
