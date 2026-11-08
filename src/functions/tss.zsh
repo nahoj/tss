@@ -17,7 +17,7 @@ tss() {
   setopt extended_glob null_glob
 
   zmodload -F zsh/stat b:zstat
-  zmodload -F zsh/system b:sysopen
+  zmodload -F zsh/system b:sysopen p:sysparams
 
   local module
   for module in $TSS_PATH/*.zsh; do

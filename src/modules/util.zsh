@@ -150,8 +150,10 @@ always_with_trap_INT() {
       # nested call, the TRAPINT above of the enclosing call gets it, which
       # does. Otherwise, the caller's trap applies, if any; or zsh's default
       # action, which also does in an interactive shell, and exits otherwise.
+      # Send it to the current process: in a subshell, e.g. a background
+      # job, $$ is the PID of the main shell.
       TRY_BLOCK_INTERRUPT=1
-      kill -s INT "$$"
+      kill -s INT $sysparams[pid]
       # Still here: a trap of the caller handled SIGINT, or it is ignored.
       # Don't interrupt the caller any further.
       TRY_BLOCK_INTERRUPT=0

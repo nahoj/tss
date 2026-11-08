@@ -452,6 +452,19 @@ Describe 'tss location'
           The path file.LOCK should not be exist
           The path dir/tmp should not be exist
         End
+
+        # In a subshell, $$ is the PID of the main shell
+        It "sends SIGINT received at depth $1 in a subshell to the subshell only"
+          When run run_zsh_with_modules "
+            trap 'print -r \"parent trap\"' INT
+            ( tss util $2 )
+            print -r \"subshell returned \$?\"
+          "
+          The status should equal 0
+          The output should equal "subshell returned 130"
+          The path file.LOCK should not be exist
+          The path dir/tmp should not be exist
+        End
       End
 
       It 'completes the innermost cleanup if SIGINT is received then, and dies from it after every cleanup'
@@ -499,22 +512,47 @@ Describe 'tss location'
 
       ts_contents() { ls -A loc/.ts; }
 
-      Parameters
-        'run'                'tss location index build loc'
-        'run on the left of ||' 'tss location index build loc || print -r "failed: $?"'
+      Describe 'in the main shell'
+        Parameters
+          'run'                   'tss location index build loc'
+          'run on the left of ||' 'tss location index build loc || print -r "failed: $?"'
+        End
+
+        It "dies from SIGINT, leaving the index unchanged and no lock or temporary file, when $1"
+          When run run_zsh "
+            PATH=\$PWD/bin:\$PATH
+            $2
+            print -r \"returned \$?\"
+          "
+          The status should equal 130
+          The output should equal ""
+          The stderr should include "Building index"
+          The result of function ts_contents should equal tsi.json
+          The contents of file loc/.ts/tsi.json should equal '[]'
+        End
       End
 
-      It "dies from SIGINT, leaving the index unchanged and no lock or temporary file, when $1"
-        When run run_zsh "
-          PATH=\$PWD/bin:\$PATH
-          $2
-          print -r \"returned \$?\"
-        "
-        The status should equal 130
-        The output should equal ""
-        The stderr should include "Building index"
-        The result of function ts_contents should equal tsi.json
-        The contents of file loc/.ts/tsi.json should equal '[]'
+      # As after completion, or add/remove/clean, which run the build in the
+      # background. There, $$ is the PID of the main shell.
+      Describe 'in a subshell'
+        Parameters
+          'a subshell'        '( tss location index build loc )'
+          'a background job'  'tss location index build loc & wait $!'
+        End
+
+        It "interrupts $1 only, leaving the index unchanged and no lock or temporary file"
+          When run run_zsh "
+            PATH=\$PWD/bin:\$PATH
+            trap 'print -r \"parent trap\"' INT
+            $2
+            print -r \"returned \$?\"
+          "
+          The status should equal 0
+          The output should equal "returned 130"
+          The stderr should include "Building index"
+          The result of function ts_contents should equal tsi.json
+          The contents of file loc/.ts/tsi.json should equal '[]'
+        End
       End
     End
   End
