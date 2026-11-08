@@ -112,18 +112,32 @@ internal_print_json_file_object() {
 tss_location_index_build() {
   local location=${1:-.}
   require_is_location "$location"
+  # Never write through a symlink, which could point anywhere: neither .ts
+  # (checked here) nor the files in it (see below)
+  require_not_symlink "$location/.ts"
 
   do_build_index() {
     logg "Building index $location/.ts/tsi.json"
 
-    # Note: We are in $location
+    # Note: We are in $location, and hold the lock
     local index new_index
     index=".ts/tsi.json"
     new_index="$index.NEW"
 
+    # Anything at $new_index was left by a killed build, or planted: remove it
+    # (rm removes a symlink, not its target). Then create the file exclusively,
+    # and remove it unless renamed, even if the build fails or is interrupted.
+    rm -f -- $new_index
+    local -a setup_cmd=(create_new_file $new_index)
+    local -a cleanup_cmd=(rm -f -- $new_index)
+    always_with_trap_INT setup_cmd cleanup_cmd \
+      do_write_new_index
+  }
+
+  do_write_new_index() {
     local error
 
-    print '[' >$new_index
+    print '[' >>$new_index
     # If the current dir is not empty
     if [ .(FN) ]; then
       # Don't 'find *' in case there is a file whose name starts with a dash.
@@ -160,7 +174,7 @@ tss_location_index_build() {
     fi
     print '\n]' >>$new_index
 
-    mv $new_index $index
+    mv -- $new_index $index
     [[ ! $error ]]
   }
   with_lock_file "$location/.ts/tsi.json" \

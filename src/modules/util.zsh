@@ -101,9 +101,10 @@ status() {
 
 # Usage: always_with_trap_INT <setup_cmd> <cleanup_cmd> <cmd>...
 #
-# Run the setup command then, if it succeeds, the command given by the
-# remaining arguments. Then, in any case, run the cleanup command, even if
-# SIGINT is received; and if it was, re-send it once cleanup is done.
+# Run the setup command and, if it succeeds, the command given by the
+# remaining arguments, then the cleanup command: the latter is run if and only
+# if the setup command succeeded, even if the command fails or SIGINT is
+# received; and if SIGINT was received, re-send it once cleanup is done.
 #
 # <setup_cmd> and <cleanup_cmd> are the names of array variables holding a
 # command and its arguments. Commands are run as is, never re-parsed as shell
@@ -115,20 +116,24 @@ always_with_trap_INT() {
   local cleanup_cmd_name=$2
   shift 2
 
-  local interrupted=
+  local interrupted= set_up=
   local trap_cmd='unsetopt warn_nested_var; interrupted=x; return 130'
   # (the return code should never get out of the function         ^)
   {
     () {
       trap "$trap_cmd" INT
-      "${(@P)setup_cmd_name}" && "$@"
+      "${(@P)setup_cmd_name}" && typeset -g set_up=x && "$@"
     } "$@"
   } always {
     {
-      () {
-        trap "$trap_cmd" INT
-        "${(@P)cleanup_cmd_name}"
-      }
+      # Don't undo a setup that failed, e.g. remove a lock file that another
+      # process holds
+      if [[ $set_up ]]; then
+        () {
+          trap "$trap_cmd" INT
+          "${(@P)cleanup_cmd_name}"
+        }
+      fi
     } always {
       if [[ $interrupted ]]; then
         kill -s INT "$$"
@@ -159,13 +164,24 @@ with_lock_file() {
 
   local lock_file
   lock_file=$file.LOCK
-  if [[ -e $lock_file ]]; then
+  if [[ -e $lock_file || -L $lock_file ]]; then
     fail "File is locked: ${(qqq)file}"
   fi
 
-  local -a setup_cmd=(touch -- "$lock_file")
+  # Unlike the check above, this is atomic: it fails if another process
+  # created the lock file in the meantime
+  local -a setup_cmd=(create_new_file "$lock_file")
   local -a cleanup_cmd=(rm -f -- "$lock_file")
   always_with_trap_INT setup_cmd cleanup_cmd "$@"
+}
+
+# Create the given empty file, failing if anything exists at its path, even a
+# symlink: with O_EXCL, open(2) never follows a symlink, even a dangling one.
+# This is atomic.
+create_new_file() {
+  local -i fd
+  sysopen -w -o excl -u fd -- "$1" || return $?
+  exec {fd}>&-
 }
 
 
@@ -240,6 +256,13 @@ require_directory() {
   local pathh=$1
   if [[ ! -d $pathh ]]; then
     failk 2 "Path does not exist or is not a directory: ${(qqq)pathh}"
+  fi
+}
+
+require_not_symlink() {
+  local pathh=$1
+  if [[ -L $pathh ]]; then
+    failk 2 "Refusing to use a symbolic link: ${(qqq)pathh}"
   fi
 }
 

@@ -184,4 +184,142 @@ Describe 'tss location'
       End
     End
   End
+
+  # The contents of .ts may come from an untrusted source: writes there must
+  # never go through a symlink, which could point to any file
+  Describe 'with symlinks in .ts'
+    # Symlinks point to 'target' and 'missing', outside the location
+    BeforeEach 'cd _test && make_location && print -r original >target'
+    AfterEach 'cd "$SHELLSPEC_PROJECT_ROOT"'
+
+    make_location() {
+      mkdir -p loc/.ts
+      print -r '[]' >loc/.ts/tsi.json
+      touch loc/file.ext
+    }
+
+    ts_contents() { ls -A loc/.ts; }
+    other_contents() { ls -A other; }
+
+    # Run tss with a 'find' command that fails
+    tss_with_failing_find() {
+      mkdir bin
+      printf '#!/bin/sh\nexit 1\n' >bin/find
+      chmod +x bin/find
+      PATH="$PWD/bin:$PATH" tss "$@"
+    }
+
+    # Run tss on the left of '||'. This currently makes the index build fail
+    # after the first entry, for an unrelated reason (err_return triggered by
+    # '(( i++ ))' when i is 0).
+    tss_or_true() {
+      tss "$@" || true
+    }
+
+    Describe 'at tsi.json.NEW'
+      Parameters
+        'an existing file'    target
+        'a nonexistent file'  missing
+      End
+
+      It "builds the index without writing to $1 it points to"
+        ln -s "$PWD/$2" loc/.ts/tsi.json.NEW
+        When run tss location index build loc
+        The status should equal 0
+        The stderr should include "Building index"
+        The contents of file loc/.ts/tsi.json should include '"name": "file.ext"'
+        The result of function ts_contents should equal tsi.json
+        The contents of file target should equal original
+        The path missing should not be exist
+      End
+    End
+
+    It 'builds the index despite a leftover tsi.json.NEW'
+      print -r garbage >loc/.ts/tsi.json.NEW
+      When run tss location index build loc
+      The status should equal 0
+      The stderr should include "Building index"
+      The contents of file loc/.ts/tsi.json should include '"name": "file.ext"'
+      The result of function ts_contents should equal tsi.json
+    End
+
+    Describe 'at tsi.json.LOCK'
+      Parameters
+        'an existing file'    target
+        'a nonexistent file'  missing
+      End
+
+      It "reports the lock without writing to $1 it points to"
+        ln -s "$PWD/$2" loc/.ts/tsi.json.LOCK
+        When run tss location index build loc
+        The status should equal 1
+        The stderr should include "File is locked"
+        The path loc/.ts/tsi.json.LOCK should be symlink
+        The contents of file loc/.ts/tsi.json should equal '[]'
+        The contents of file target should equal original
+        The path missing should not be exist
+      End
+    End
+
+    It 'reports the lock if tsi.json.LOCK is a file'
+      touch loc/.ts/tsi.json.LOCK
+      When run tss location index build loc
+      The status should equal 1
+      The stderr should include "File is locked"
+      The path loc/.ts/tsi.json.LOCK should be file
+      The contents of file loc/.ts/tsi.json should equal '[]'
+    End
+
+    Describe 'replacing .ts'
+      BeforeEach 'mkdir other && rm -r loc/.ts && ln -s "$PWD/other" loc/.ts'
+
+      It 'refuses to build the index'
+        print -r '[]' >other/tsi.json
+        When run tss location index build loc
+        The status should equal 1
+        The stderr should include "symbolic link"
+        The result of function other_contents should equal tsi.json
+        The contents of file other/tsi.json should equal '[]'
+      End
+
+      It 'refuses to init a location'
+        When run tss location init loc
+        The status should equal 1
+        The stderr should include "symbolic link"
+        The result of function other_contents should equal ""
+      End
+    End
+
+    It 'does not init a location by writing to a nonexistent file tsi.json points to'
+      rm loc/.ts/tsi.json
+      ln -s "$PWD/missing" loc/.ts/tsi.json
+      When run tss location init loc
+      The status should equal 1
+      The stderr should include "loc/.ts/tsi.json"
+      The path missing should not be exist
+    End
+
+    It 'leaves no temporary file in .ts after a successful build'
+      When run tss location index build loc
+      The status should equal 0
+      The stderr should include "Building index"
+      The result of function ts_contents should equal tsi.json
+    End
+
+    It 'leaves no temporary file in .ts after a failed build'
+      When run tss_with_failing_find location index build loc
+      The status should equal 1
+      The stderr should include "Building index"
+      The result of function ts_contents should equal tsi.json
+      The contents of file loc/.ts/tsi.json should equal '[]'
+    End
+
+    It 'leaves no temporary file in .ts after a build run on the left of ||'
+      touch loc/file2.ext
+      When run tss_or_true location index build loc
+      The status should equal 0
+      The stderr should include "Building index"
+      The result of function ts_contents should equal tsi.json
+    End
+  End
 End

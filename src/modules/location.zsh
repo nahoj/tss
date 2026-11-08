@@ -30,8 +30,11 @@ EOF
   if ! type jq >/dev/null; then
     fail "Using locations requires [jq](https://jqlang.github.io/jq/)."
   fi
+  # Don't write through symlinks, which could point anywhere
+  require_not_symlink "$location/.ts"
   mkdir -p "$location/.ts"
-  print -r '[]' >"$location/.ts/tsi.json"
+  create_new_file "$location/.ts/tsi.json"
+  print -r '[]' >>"$location/.ts/tsi.json"
   tss_location_index_build "$location"
 }
 
