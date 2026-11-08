@@ -110,6 +110,42 @@ Describe 'tss location'
       The result of function index_names should equal "."
       The result of function ts_contents should equal tsi.json
     End
+
+    Describe 'uuids'
+      # The uuids in the index that are not in the canonical lowercase
+      # 8-4-4-4-12 form, one per line
+      malformed_uuids() {
+        jq -r '.[].uuid | select(test("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") | not)' loc/.ts/tsi.json
+      }
+      distinct_uuid_count() { jq '[.[].uuid] | unique | length' loc/.ts/tsi.json; }
+
+      # Run tss with a 'uuidgen' that prints uppercase, as on macOS. The first
+      # group is close to 2^32, so that consecutive uuids wrap around to 0.
+      tss_with_uppercase_uuidgen() {
+        mkdir bin
+        printf '#!/bin/sh\necho FFFFFFFE-ABCD-4EF0-89AB-CDEF01234567\n' >bin/uuidgen
+        chmod +x bin/uuidgen
+        PATH="$PWD/bin:$PATH" tss "$@"
+      }
+
+      It 'gives each entry a distinct, well-formed uuid'
+        When run tss location index build loc
+        The status should equal 0
+        The stderr should include "Building index"
+        The result of function index_names should equal ". a.ext b.ext c.ext"
+        The result of function malformed_uuids should equal ""
+        The result of function distinct_uuid_count should equal 4
+      End
+
+      It 'gives each entry a distinct, well-formed, lowercase uuid if uuidgen prints uppercase'
+        When run tss_with_uppercase_uuidgen location index build loc
+        The status should equal 0
+        The stderr should include "Building index"
+        The result of function index_names should equal ". a.ext b.ext c.ext"
+        The result of function malformed_uuids should equal ""
+        The result of function distinct_uuid_count should equal 4
+      End
+    End
   End
 
   # Paths must never be re-parsed as shell code, nor taken for command options

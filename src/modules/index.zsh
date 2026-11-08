@@ -62,7 +62,8 @@ internal_print_json_file_object() {
 
   print '  {'
   print -n '    "uuid": "'
-  print -n ${uuid:-$(uuidgen)}
+  # In lowercase, even where uuidgen prints uppercase (macOS)
+  print -n ${uuid:-${(L)"$(uuidgen)"}}
 
   print -n '",\n    "name": '
   print_json_string "$file_name"
@@ -145,11 +146,14 @@ tss_location_index_build() {
       find . -not -path '*/.*' -printf '%y\t%T@\t%s\t' -print | {
         local IFS=$'\t'
         local typ mtime size_bytes file_path
-        # Like TagSpaces, generate consecutive UUIDs as a performance improvement
+        # Like TagSpaces, generate consecutive UUIDs as a performance improvement:
+        # the first group (8 hex digits) is a counter, the rest (from offset 9,
+        # after the dash) is fixed. uuidgen prints the 8-4-4-4-12 form, in
+        # uppercase on macOS: print it in lowercase, like the counter (%08x).
         local -i uuid_start
         uuid_start=16#${"$(uuidgen)":0:8}
         local uuid_suffix uuid
-        uuid_suffix=${"$(uuidgen)":10:27}
+        uuid_suffix=${(L)"$(uuidgen)":9:27}
         local -i i=0
         # Don't 'read -d' in code that can be run asynchronously because of this bug in zsh <= 5.9:
         # https://www.zsh.org/mla/workers/2023/msg00696.html
