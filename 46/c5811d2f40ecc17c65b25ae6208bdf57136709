@@ -1,0 +1,21 @@
+spec/tss_location_spec.sh
+  s_26b0dde723bb63::t_091e8ca856db61 283-318
+src/modules/util.zsh
+  s_26b0dde723bb63::t_56ae278059f0a9 175-179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "46c5811d2f40ecc17c65b25ae6208bdf57136709",
+  "prompts": {},
+  "sessions": {
+    "s_26b0dde723bb63": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "52831fae-fb96-4735-b113-9743fdf781f5",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Johan Grande <nahoj@crans.org>"
+    }
+  }
+}
